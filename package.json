@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "name": "wurd",
+  "version": "1.0.0",
+  "description": "Wurd CMS client for Node",
+  "repository": "",
+  "main": "index.js",
+  "dependencies": {
+    "get-property-value": "^2.0.0",
+    "node-fetch": "^1.6.3",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "author": "Charlie Davison",
+  "engines": {
+    "node": "6.9.x"
+  }
+}
