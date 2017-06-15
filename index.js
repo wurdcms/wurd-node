@@ -55,6 +55,7 @@ exports.load = function(appName, path, options = {}, cb) {
         .then(content => {
           let helpers = {
             text: exports.createTextHelper(content, options),
+            el: exports.createElementHelper(content, options),
             list: exports.createListHelper(content, options)
           };
 
@@ -85,13 +86,37 @@ exports.createTextHelper = function(content, options = {}) {
    * @param {String} path
    * @param {String} [backup]
    */
-  return function textHelper(path, backup = '') {
-    if (options.draft) {
-      backup = backup || `[${path}]`;
-    }
+  return function textHelper(path) {
+    return getPath(content, path) || (options.draft ? `[${path}]` : '');
+  };
+};
 
-    return getPath(content, path) || backup;
-    //return content[path] || backup;
+
+/**
+ * Creates the text helper for getting text by path
+ *
+ * @param {Object} content
+ * @param {Object} options
+ *
+ * @return {Function}
+ */
+exports.createElementHelper = function(content, options = {}) {
+  /**
+   * Gets text, falling to backup content if not defined
+   *
+   * @param {String} path
+   * @param {String} [type]
+   */
+  return function elementHelper(path, type = 'span') {
+    let text = getPath(content, path);
+
+    if (options.draft) {
+      text = text || `[${path}]`;
+
+      return `<${type} data-wurd="${path}">${text}</${type}>`;
+    } else {
+      return text;
+    }
   };
 };
 
