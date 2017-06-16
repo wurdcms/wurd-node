@@ -1,5 +1,5 @@
-const _ = require('underscore');
-const getPath = require('get-property-value');
+const _ = require('lodash');
+const getPath = _.get;
 const fetch = require('node-fetch');
 const querystring = require('querystring');
 
