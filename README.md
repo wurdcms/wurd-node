@@ -1,10 +1,6 @@
 # NodeJS server side client for the Wurd CMS
 Wurd is a service that lets you integrate a CMS into any website or app in minutes.  This client makes it easy to load content for rendering pages on the server.
 
-If loading content in the browser, check out these other packages:
-- [wurd-web](https://github.com/wurdcms/wurd-web): For general client side Javascript apps
-- [wurd-react](https://github.com/wurdcms/wurd-react): Easy integration for React apps
-
 
 ## Example
 ```javascript
@@ -39,3 +35,9 @@ npm install wurd
 ```html
 <h1 data-wurd="homepage.title"><%= wurd.get('homepage.title') %></h1>
 ```
+
+
+## Other modules
+If loading content in the browser, check out these other packages:
+- [wurd-web](https://github.com/wurdcms/wurd-web): For general client side Javascript apps
+- [wurd-react](https://github.com/wurdcms/wurd-react): Easy integration for React apps
