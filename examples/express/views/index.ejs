@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta http-equiv="x-ua-compatible" content="IE=edge" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <title><%= t('test.title') %></title>
+  </head>
+  <body>
+    <div data-wurd-block="test">
+      <h1 data-wurd=".title"><%= t('test.title') %></h1>
+
+      <p data-wurd-md=".intro"><%- t('test.intro').replace('{{name}}', 'Charlie') %></p>
+
+      <div data-wurd-md=".content"><%- markdown(t('test.content')) %></div>
+    </div>
+
+    <ul data-wurd-list="test.list">
+      <% wurd.list('test.list', ['title', 'content'], (item, id) => { %>
+        <li data-wurd-block="<%= id %>">
+          <h4 data-wurd=".title"><%= item.title %></h4>
+          <div data-wurd-md=".content"><%- markdown(item.content || '') %></div>
+        </li>
+      <% }) %>
+    </ul>
+
+    <div><%- wurd.el('test.section.foo') %></div>
+
+    <em><%- wurd.el('not.yet.created') %></em>
+
+
+    <ul data-wurd-list="test.names2">
+      <% wurd.list('test.names2', {first: 'First', last: 'Last' }, (name, id) => { %>
+        <li data-wurd-block="<%=id%>">
+          <span data-wurd=".first"><%= name.first %></span>
+          <span data-wurd=".last"><%= name.last %></span>
+        </li>
+      <% }) %>
+    </ul>
+
+    <img data-wurd-img="test.profilePic" src="<%= t('test.profilePic') %>" style="max-height: 400px;" />
+
+
+    <% if (editMode) { %>
+      <script src="https://edit-v3.wurd.io/widget.js" data-app="example"></script>
+    <% } %>
+
+  </body>
+</html>

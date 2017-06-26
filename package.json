@@ -8,8 +8,15 @@
     "lodash": "^4.17.4",
     "node-fetch": "^1.6.3"
   },
-  "devDependencies": {},
-  "scripts": {},
+  "devDependencies": {
+    "ejs": "^2.5.6",
+    "express": "^4.15.3",
+    "marked": "^0.3.6",
+    "nodemon": "^1.11.0"
+  },
+  "scripts": {
+    "example": "./node_modules/.bin/nodemon examples/express"
+  },
   "author": "Charlie Davison",
   "engines": {
     "node": "6.9.x"
