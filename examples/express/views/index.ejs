@@ -5,42 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta http-equiv="x-ua-compatible" content="IE=edge" />
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
     
-    <title><%= t('test.title') %></title>
+    <title><%= t('home.title') %></title>
   </head>
   <body>
-    <div data-wurd-block="test">
-      <h1 data-wurd=".title"><%= t('test.title') %></h1>
 
-      <p data-wurd-md=".intro"><%- t('test.intro').replace('{{name}}', 'Charlie') %></p>
+    <div class="container">
+      <img data-wurd-img="home.heroImage" src="<%= t('home.heroImage') %>" width="100%" />
 
-      <div data-wurd-md=".content"><%- markdown(t('test.content')) %></div>
+      <div data-wurd-block="home.welcome">
+        <h1 data-wurd=".title"><%= t('home.welcome.title') %></h1>
+
+        <div data-wurd-md=".intro" class="alert alert-info">
+          <%- t('home.welcome.intro').replace('{{name}}', 'John') %>
+        </div>
+
+        <div data-wurd-md=".markdown">
+          <%- markdown(t('home.welcome.markdown')) %>
+        </div>
+      </div>
+
+      <hr />
+
+      <h2 data-wurd="home.team.title"><%= t('home.team.title') %></h2>
+      <ul data-wurd-list="home.team.members" class="list-group">
+        <% wurd.list('home.team.members', ['image', 'name'], (item, id) => { %>
+          <li data-wurd-block="<%= id %>" class="list-group-item">
+            <img data-wurd-img=".image" src="<%= item.image %>" width="75" />
+            <span data-wurd=".name"><%= item.name %></span>
+          </li>
+        <% }) %>
+      </ul>
     </div>
-
-    <ul data-wurd-list="test.list">
-      <% wurd.list('test.list', ['title', 'content'], (item, id) => { %>
-        <li data-wurd-block="<%= id %>">
-          <h4 data-wurd=".title"><%= item.title %></h4>
-          <div data-wurd-md=".content"><%- markdown(item.content || '') %></div>
-        </li>
-      <% }) %>
-    </ul>
-
-    <div><%- wurd.el('test.section.foo') %></div>
-
-    <em><%- wurd.el('not.yet.created') %></em>
-
-
-    <ul data-wurd-list="test.names2">
-      <% wurd.list('test.names2', {first: 'First', last: 'Last' }, (name, id) => { %>
-        <li data-wurd-block="<%=id%>">
-          <span data-wurd=".first"><%= name.first %></span>
-          <span data-wurd=".last"><%= name.last %></span>
-        </li>
-      <% }) %>
-    </ul>
-
-    <img data-wurd-img="test.profilePic" src="<%= t('test.profilePic') %>" style="max-height: 400px;" />
 
 
     <% if (editMode) { %>

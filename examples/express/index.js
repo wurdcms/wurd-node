@@ -39,7 +39,7 @@ app.use((req, res, next) => {
 
 //Routes
 app.get('/', (req, res, next) => {
-  wurd.load('example', 'test', req.wurdOptions, (err, content, helpers) => {
+  wurd.load('example', 'home', req.wurdOptions, (err, content, helpers) => {
     if (err) return next(err);
 
     res.render('index', {
@@ -56,7 +56,7 @@ app.get('/blog', (req, res, next) => {
 app.get('/blog/:postId', (req, res, next) => {
   let {postId} = req.params;
 
-  wurd.load('example', postId, req.wurdOptions, (err, content, helpers) => {
+  wurd.load('example', `blog.${postId}`, req.wurdOptions, (err, content, helpers) => {
     if (err) return next(err);
 
     res.render('blog-post', {
