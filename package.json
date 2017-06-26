@@ -20,5 +20,10 @@
   "author": "Charlie Davison",
   "engines": {
     "node": "6.9.x"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wurdcms/wurd-node.git"
+  },
+  "homepage": "https://github.com/wurdcms/wurd-node"
 }
