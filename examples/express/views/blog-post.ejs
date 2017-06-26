@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta http-equiv="x-ua-compatible" content="IE=edge" />
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
     
     <title><%= t(`${postId}.title`) %></title>
   </head>
-  <body>
+  <body class="container">
+    <%- include nav.ejs %>
+
     <div data-wurd-block="<%= postId %>">
       <h1 data-wurd=".title"><%= t(`${postId}.title`) %></h1>
-
-      <p data-wurd-md=".intro"><%= t(`${postId}.intro`) %></p>
 
       <div data-wurd-md=".content"><%- markdown(t(`${postId}.content`)) %></div>
     </div>

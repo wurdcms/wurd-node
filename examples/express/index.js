@@ -38,6 +38,7 @@ app.use((req, res, next) => {
 
 
 //Routes
+//Simple page
 app.get('/', (req, res, next) => {
   wurd.load('example', 'home', req.wurdOptions, (err, content, helpers) => {
     if (err) return next(err);
@@ -49,14 +50,13 @@ app.get('/', (req, res, next) => {
   });
 });
 
-app.get('/blog', (req, res, next) => {
-  res.render('blog-index');
-});
+//Blog post: Example of loading content dynamically
+app.get('/blog/:slug', (req, res, next) => {
+  let {slug} = req.params;
 
-app.get('/blog/:postId', (req, res, next) => {
-  let {postId} = req.params;
+  let postId = `blog_${slug}`;
 
-  wurd.load('example', `blog.${postId}`, req.wurdOptions, (err, content, helpers) => {
+  wurd.load('example', postId, req.wurdOptions, (err, content, helpers) => {
     if (err) return next(err);
 
     res.render('blog-post', {

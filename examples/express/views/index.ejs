@@ -7,37 +7,36 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
     
-    <title><%= t('home.title') %></title>
+    <title>Wurd example</title>
   </head>
-  <body>
+  <body class="container">
+    <%- include nav.ejs %>
 
-    <div class="container">
-      <img data-wurd-img="home.heroImage" src="<%= t('home.heroImage') %>" width="100%" />
+    <img data-wurd-img="home.heroImage" src="<%= t('home.heroImage') %>" width="100%" />
 
-      <div data-wurd-block="home.welcome">
-        <h1 data-wurd=".title"><%= t('home.welcome.title') %></h1>
+    <div data-wurd-block="home.welcome">
+      <h2 data-wurd=".title"><%= t('home.welcome.title') %></h2>
 
-        <div data-wurd-md=".intro" class="alert alert-info">
-          <%- t('home.welcome.intro').replace('{{name}}', 'John') %>
-        </div>
-
-        <div data-wurd-md=".markdown">
-          <%- markdown(t('home.welcome.markdown')) %>
-        </div>
+      <div data-wurd-md=".intro" class="alert alert-info">
+        <%- t('home.welcome.intro').replace('{{name}}', 'John') %>
       </div>
 
-      <hr />
-
-      <h2 data-wurd="home.team.title"><%= t('home.team.title') %></h2>
-      <ul data-wurd-list="home.team.members" class="list-group">
-        <% wurd.list('home.team.members', ['image', 'name'], (item, id) => { %>
-          <li data-wurd-block="<%= id %>" class="list-group-item">
-            <img data-wurd-img=".image" src="<%= item.image %>" width="75" />
-            <span data-wurd=".name"><%= item.name %></span>
-          </li>
-        <% }) %>
-      </ul>
+      <div data-wurd-md=".markdown">
+        <%- markdown(t('home.welcome.markdown')) %>
+      </div>
     </div>
+
+    <hr />
+
+    <h2 data-wurd="home.team.title"><%= t('home.team.title') %></h2>
+    <ul data-wurd-list="home.team.members" class="list-group">
+      <% wurd.list('home.team.members', ['image', 'name'], (item, id) => { %>
+        <li data-wurd-block="<%= id %>" class="list-group-item">
+          <img data-wurd-img=".image" src="<%= item.image %>" width="75" />
+          <span data-wurd=".name"><%= item.name %></span>
+        </li>
+      <% }) %>
+    </ul>
 
 
     <% if (editMode) { %>
