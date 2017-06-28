@@ -30,7 +30,7 @@
 
     <h2 data-wurd="home.team.title"><%= t('home.team.title') %></h2>
     <ul data-wurd-list="home.team.members" class="list-group">
-      <% wurd.list('home.team.members', ['image', 'name'], (item, id) => { %>
+      <% wurd.map('home.team.members', (item, id) => { %>
         <li data-wurd-block="<%= id %>" class="list-group-item">
           <img data-wurd-img=".image" src="<%= item.image %>" width="75" />
           <span data-wurd=".name"><%= item.name %></span>
@@ -39,7 +39,7 @@
     </ul>
 
 
-    <% if (editMode) { %>
+    <% if (wurd.editMode) { %>
       <script src="https://edit-v3.wurd.io/widget.js" data-app="example"></script>
     <% } %>
 

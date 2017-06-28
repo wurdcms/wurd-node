@@ -1,173 +1,150 @@
-const _ = require('lodash');
-const getPath = _.get;
+const get = require('get-property-value');
 const fetch = require('node-fetch');
-const querystring = require('querystring');
-
-const config = {
-  widgetUrl: process.env.WURD_WIDGET_URL || 'https://edit-v3.wurd.io',
-  apiUrl: process.env.WURD_API_URL || 'https://api-v3.wurd.io'
-};
+const {encodeQueryString} = require('./utils');
 
 
-exports.connect = function(appName, mainOptions = {}) {
-  return {
-    load: function(path, fnOptions, cb) {
-      //Normalise arguments
-      if (arguments.length == 2) { //path, cb
-        cb = fnOptions;
-        fnOptions = {};
-      }
-
-      let options = Object.assign({}, mainOptions, fnOptions);
-
-      exports.load(appName, path, options, cb);
-    }
-  };
-};
+const WIDGET_URL = 'https://edit-v3.wurd.io/widget.js';
+const API_URL = 'https://api-v3.wurd.io';
 
 
+class Wurd {
 
-/**
- * Loads a given section's content
- *
- * @param {String} appName
- * @param {String} path
- * @param {Object} [options]
- * @param {Boolean} [options.draft]
- * @param {Function} cb               Callback({Error} err, {Object} content, {Function} t)
- */
-exports.load = function(appName, path, options = {}, cb) {
-  //Normalise arguments
-  if (arguments.length === 3) { //appName, path, cb
-    cb = options;
-    options = {};
+  constructor() {
+    this.appName = null;
+    this.options = {};
+
+    // Object to store all content that's loaded
+    this.content = {};
   }
 
-  let params = querystring.stringify(options);
+  /**
+   * Sets up the default connection/instance
+   *
+   * @param {String} appName
+   * @param {Object} [options]
+   * @param {Boolean} [options.draft]             If true, loads draft content; otherwise loads published content
+   */
+  connect(appName, options) {
+    this.appName = appName;
+    this.options = Object.assign({}, options);
 
-  let url = `${config.apiUrl}/apps/${appName}/content/${path}?${params}`;
+    //Return express middleware that detects request-specific options such as edit/draft mode
+    return (req, res, next) => {
+      let {edit, lang} = req.query;
 
-  fetch(url)
-    .then(res => {
-      if (!res.ok) return cb(new Error(`Error loading ${path}: ${res.statusText}`));
+      let isEditMode = (typeof edit !== 'undefined');
 
-      res.json()
-        .then(content => {
-          let helpers = {
-            text: exports.createTextHelper(content, options),
-            el: exports.createElementHelper(content, options),
-            list: exports.createListHelper(content, options)
-          };
+      req.wurd = {
+        draft: isEditMode,
+        lang: lang
+      };
 
-          cb(null, content, helpers);
-        })
-        .catch(err => {
-          cb(err);
+      //Add wurd content helpers to the response so they are available in templates
+      res.locals.wurd = this;
+      res.locals.wurd.editMode = isEditMode;
+      res.locals.wurd.lang = lang;
+
+      console.log(res.locals)
+
+      next();
+    };
+  }
+
+  /**
+   * Loads a section of content so that it's items are ready to be accessed with #get(id)
+   *
+   * @param {String} path     Section path e.g. `section`
+   */
+  load(path) {
+    let {appName, options} = this;
+
+    return new Promise((resolve, reject) => {
+      if (!appName) {
+        return reject('Use wurd.connect(appName) before wurd.load()');
+      }
+
+      // Return cached version if available
+      let sectionContent = this.content[path];
+
+      if (sectionContent) {
+        options.log && console.info('from cache: ', path);
+        return resolve(sectionContent);
+      }
+
+      // No cached version; fetch from server
+      const params = encodeQueryString(options);
+      const url = `${API_URL}/apps/${appName}/content/${path}?${params}`;
+
+      options.log && console.info('from server: ', path, url);
+
+      return fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`Error loading ${path}: ${res.statusText}`);
+
+          return res.json()
+            .then(sectionContent => {
+              // Cache for next time
+              // TODO: Does this cause problems if future load() calls use nested paths e.g. main.subsection
+              Object.assign(this.content, sectionContent);
+
+              resolve(sectionContent);
+            });
         });
-    })
-    .catch(err => {
-      cb(err);
     });
-};
+  }
 
-
-/**
- * Creates the text helper for getting text by path
- *
- * @param {Object} content
- * @param {Object} options
- *
- * @return {Function}
- */
-exports.createTextHelper = function(content, options = {}) {
   /**
-   * Gets text, falling to backup content if not defined
+   * Gets a content item by path (e.g. `section.item`)
    *
-   * @param {String} path
-   * @param {String} [backup]
+   * @param {String} path       Item path e.g. `section.item`
+   * @param {String} [backup]   Backup content to display if there is no item content
    */
-  return function textHelper(path) {
-    return getPath(content, path) || (options.draft ? `[${path}]` : '');
-  };
-};
-
-
-/**
- * Creates the text helper for getting text by path
- *
- * @param {Object} content
- * @param {Object} options
- *
- * @return {Function}
- */
-exports.createElementHelper = function(content, options = {}) {
-  /**
-   * Gets text, falling to backup content if not defined
-   *
-   * @param {String} path
-   * @param {String} [type]
-   */
-  return function elementHelper(path, type = 'span') {
-    let text = getPath(content, path);
+  get(path, backup) {
+    let {options, content} = this;
 
     if (options.draft) {
-      text = text || `[${path}]`;
+      backup = (typeof backup !== 'undefined') ? backup : `[${path}]`;
+    }
 
+    return get(content, path) || backup;
+  }
+
+  /**
+   * Invokes a function on every content item in a list.
+   *
+   * @param {String} path     Item path e.g. `section.item`
+   * @param {Function} fn     Function to invoke
+   */
+  map(path, fn) {
+    let {content} = this;
+
+    // Get list content, defaulting to backup with the template
+    let listContent = get(content, path) || { [Date.now()]: {} };
+    let index = 0;
+
+    return Object.keys(listContent).map(id => {
+      let item = listContent[id];
+      let currentIndex = index;
+
+      index++;
+
+      return fn(item, [path, id].join('.'), currentIndex);
+    });
+  }
+
+  el(path, type = 'span') {
+    let {options} = this;
+
+    let text = this.get(path);
+
+    if (options.draft) {
       return `<${type} data-wurd="${path}">${text}</${type}>`;
     } else {
       return text;
     }
-  };
+  }
+
 };
 
 
-/**
- * Creates the list helper for iterating over list items
- *
- * @param {Object} content
- *
- * @return {Function}
- */
-exports.createListHelper = function(content) {
-  /**
-   * Runs a function for each item in a list with signature ({ item, id })
-   *
-   * @param {String} path
-   * @param {Object|String[]} template
-   * @param {Function} fn
-   */
-  return function listHelper(path, template, fn) {
-    //Create backup content for an empty list, so that inputs are displayed
-    let backup;
-
-    //Support passing in an array of child item names as a shortcut
-    if (_.isArray(template)) {
-      backup = template.reduce((memo, child) => {
-        memo[child] = `[${child}]`;
-        return memo;
-      }, {});
-    }
-
-    else {
-      backup = template;
-    }
-
-    //Get list content, defaulting to backup with a template
-    let listContent = getPath(content, path);
-    
-    if (!listContent) {
-      listContent = {
-        '0': backup
-      };
-    }
-
-    let i = 0;
-    return _.each(listContent, (item, id) => {
-      let itemWithDefaults = Object.assign({}, backup, item);
-
-      fn(itemWithDefaults, [path, id].join('.'), i);
-
-      i++;
-    });
-  };
-};
+module.exports = new Wurd();

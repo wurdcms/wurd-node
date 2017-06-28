@@ -1,11 +1,14 @@
 {
   "name": "wurd",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Wurd CMS client for Node",
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wurdcms/wurd-node.git"
+  },
   "main": "index.js",
   "dependencies": {
-    "lodash": "^4.17.4",
+    "get-property-value": "^2.0.0",
     "node-fetch": "^1.6.3"
   },
   "devDependencies": {
@@ -20,10 +23,6 @@
   "author": "Charlie Davison",
   "engines": {
     "node": "6.9.x"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/wurdcms/wurd-node.git"
   },
   "homepage": "https://github.com/wurdcms/wurd-node"
 }
