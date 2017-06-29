@@ -8,17 +8,22 @@
   },
   "main": "index.js",
   "dependencies": {
+    "cache-manager": "^2.4.0",
     "get-property-value": "^2.0.0",
     "node-fetch": "^1.6.3"
   },
   "devDependencies": {
+    "async": "^2.5.0",
     "ejs": "^2.5.6",
     "express": "^4.15.3",
     "marked": "^0.3.6",
-    "nodemon": "^1.11.0"
+    "mocha": "^3.4.2",
+    "nodemon": "^1.11.0",
+    "sinon": "^2.3.6"
   },
   "scripts": {
-    "example": "./node_modules/.bin/nodemon examples/express"
+    "example": "./node_modules/.bin/nodemon examples/express",
+    "test": "NODE_ENV=test node_modules/.bin/mocha --recursive *.test.js --watch --reporter dot"
   },
   "author": "Charlie Davison",
   "engines": {
