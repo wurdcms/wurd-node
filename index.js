@@ -11,7 +11,9 @@ class Wurd {
 
   constructor() {
     this.appName = null;
-    this.options = {};
+    this.draft = false;
+    this.lang = null;
+    this.log = false;
 
     // Object to store all content that's loaded
     this.content = {};
@@ -23,10 +25,16 @@ class Wurd {
    * @param {String} appName
    * @param {Object} [options]
    * @param {Boolean} [options.draft]             If true, loads draft content; otherwise loads published content
+   * @param {Boolean|String} [options.editMode]   Options for enabling edit mode: `true` or `'querystring'`
+   *
+   * @return {Function} middleware
    */
-  connect(appName, options) {
+  connect(appName, options = {}) {
     this.appName = appName;
-    this.options = Object.assign({}, options);
+    
+    if (options.draft) this.draft = options.draft;
+    if (options.lang) this.lang = options.lang;
+    if (options.log) this.log = options.log;
 
     //Return express middleware that detects request-specific options such as edit/draft mode
     return (req, res, next) => {
@@ -44,8 +52,6 @@ class Wurd {
       res.locals.wurd.editMode = isEditMode;
       res.locals.wurd.lang = lang;
 
-      console.log(res.locals)
-
       next();
     };
   }
@@ -56,7 +62,7 @@ class Wurd {
    * @param {String} path     Section path e.g. `section`
    */
   load(path) {
-    let {appName, options} = this;
+    let {appName, draft, lang, log} = this;
 
     return new Promise((resolve, reject) => {
       if (!appName) {
@@ -67,15 +73,19 @@ class Wurd {
       let sectionContent = this.content[path];
 
       if (sectionContent) {
-        options.log && console.info('from cache: ', path);
+        log && console.info('from cache: ', path);
         return resolve(sectionContent);
       }
 
       // No cached version; fetch from server
-      const params = encodeQueryString(options);
-      const url = `${API_URL}/apps/${appName}/content/${path}?${params}`;
+      const params = {};
+      
+      if (draft) params.draft = 1;
+      if (lang) params.lang = lang;
+      
+      const url = `${API_URL}/apps/${appName}/content/${path}?${encodeQueryString(params)}`;
 
-      options.log && console.info('from server: ', path, url);
+      log && console.info('from server: ', path, url);
 
       return fetch(url)
         .then(res => {
@@ -84,7 +94,6 @@ class Wurd {
           return res.json()
             .then(sectionContent => {
               // Cache for next time
-              // TODO: Does this cause problems if future load() calls use nested paths e.g. main.subsection
               Object.assign(this.content, sectionContent);
 
               resolve(sectionContent);
@@ -100,9 +109,9 @@ class Wurd {
    * @param {String} [backup]   Backup content to display if there is no item content
    */
   get(path, backup) {
-    let {options, content} = this;
+    let {draft, content} = this;
 
-    if (options.draft) {
+    if (draft) {
       backup = (typeof backup !== 'undefined') ? backup : `[${path}]`;
     }
 
@@ -133,11 +142,11 @@ class Wurd {
   }
 
   el(path, type = 'span') {
-    let {options} = this;
+    let {draft} = this;
 
     let text = this.get(path);
 
-    if (options.draft) {
+    if (draft) {
       return `<${type} data-wurd="${path}">${text}</${type}>`;
     } else {
       return text;
