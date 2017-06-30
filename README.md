@@ -2,18 +2,35 @@
 Wurd is a service that lets you integrate a CMS into any website or app in minutes.  This client makes it easy to load content for rendering pages on the server.
 
 
-## Example
+## Examples
+### General example
 ```javascript
 const wurd = require('wurd');
 
-wurd.connect('myApp');
+wurd.connect('myApp', {
+  editMode: true  // Edit mode always on
+});
 
-wurd.load('homepage,common')
+wurd.load('homepage')
   .then(content => {
-    console.log(content); // { homepage: { title: 'Hello world' }, common: {...} }
-
-    console.log(wurd.get('homepage.title')); // 'Hello world'
+    console.log(content.get('homepage.title')); // 'Hello world'
   });
+```
+
+### Express example
+```javascript
+const app = require('express')();
+const wurd = require('wurd');
+
+// App middleware can be used to trigger editing mode
+app.use(wurd.connect('myApp'), {
+  editMode: 'querystring'     // Activate edit mode when the URL has an 'edit' query parameter
+});
+
+// Route middleware loads content onto the response
+app.use('/', wurd.mw('homepage'), (req, res, next) => {
+  res.render('homepage');     // In the template file you can access content with <%= wurd.get('homepage.title') %>
+});
 ```
 
 See more in the [examples](https://github.com/wurdcms/wurd-node/tree/master/examples) folder or run them with `npm run example`.
@@ -27,8 +44,8 @@ npm install wurd
 
 ## Usage
 1. Create a Wurd account and app.
-2. Connect to a Wurd app with `wurd.connect('appName', {editMode: true})`. 
-3. Load top level 'sections' of content you'll be using with `wurd.load('section')`.
+2. Connect to a Wurd app with `wurd.connect('appName', { editMode: true })`. 
+3. Load top level 'sections' of content you'll be using with `wurd.load('section')` (or use middleware: `wurd.mw('section')`).
 4. In your views/templates etc., get content with `wurd.get('section.item')`.
 5. To make regions editable, simply add the `data-wurd` attributes to the HTML.  For example (using EJS style template tags):
 

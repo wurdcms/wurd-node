@@ -16,9 +16,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 
-//Set up the CMS, changing to edit mode when the URL has a ?edit query parameter
+//Connect to the 'example' CMS app
 app.use(wurd.connect('example', {
-  editMode: 'querystring',
+  editMode: 'querystring',  //Activate edit mode when the URL has an 'edit' query parameter
 }));
 
 
