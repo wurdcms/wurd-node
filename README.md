@@ -18,6 +18,7 @@ wurd.load('homepage')
 ```
 
 ### Express example
+`index.js`
 ```javascript
 const app = require('express')();
 const wurd = require('wurd');
@@ -29,8 +30,13 @@ app.use(wurd.connect('myApp'), {
 
 // Route middleware loads content onto the response
 app.use('/', wurd.mw('homepage'), (req, res, next) => {
-  res.render('homepage');     // In the template file you can access content with <%= wurd.get('homepage.title') %>
+  res.render('homepage.ejs');     // In the template file you can access content with <%= wurd.get('homepage.title') %>
 });
+```
+
+`homepage.ejs`
+```html
+<h1><%- wurd.el('homepage.title') %></h1>
 ```
 
 See more in the [examples](https://github.com/wurdcms/wurd-node/tree/master/examples) folder or run them with `npm run example`.
