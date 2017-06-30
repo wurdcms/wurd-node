@@ -182,7 +182,7 @@ class Wurd {
         if (draft) {
           return `<${type} data-wurd="${path}">${text}</${type}>`;
         } else {
-          return text;
+          return `<${type}>${text}</${type}>`;
         }
       }
     }

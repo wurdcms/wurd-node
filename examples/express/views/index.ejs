@@ -28,7 +28,7 @@
 
     <hr />
 
-    <h2 data-wurd="home.team.title"><%= wurd.get('home.team.title') %></h2>
+    <h2><%- wurd.el('home.team.title') %></h2>
     <ul data-wurd-list="home.team.members" class="list-group">
       <% wurd.map('home.team.members', (item, id) => { %>
         <li data-wurd-block="<%= id %>" class="list-group-item">
