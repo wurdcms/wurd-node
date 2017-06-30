@@ -7,15 +7,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
     
-    <title><%= t(`${postId}.title`) %></title>
+    <title><%= wurd.get(`${postId}.title`) %></title>
   </head>
   <body class="container">
     <%- include nav.ejs %>
 
     <div data-wurd-block="<%= postId %>">
-      <h1 data-wurd=".title"><%= t(`${postId}.title`) %></h1>
+      <h1 data-wurd=".title"><%= wurd.get(`${postId}.title`) %></h1>
 
-      <div data-wurd-md=".content"><%- markdown(t(`${postId}.content`)) %></div>
+      <div data-wurd-md=".content"><%- markdown(wurd.get(`${postId}.content`)) %></div>
     </div>
 
 

@@ -49,17 +49,20 @@ app.use(wurd.connect('example', {
 
 app.use((req, res, next) => {
   res.locals.markdown = markdown;
-  res.locals.t = path => wurd.get(path);
   next();
 });
 
 
 //Routes
 //Simple page
-app.get('/', (req, res, next) => {
+/*app.get('/', (req, res, next) => {
   wurd.load('nav,home', req.wurdOptions).then(content => {
     res.render('index');
   });
+});*/
+
+app.get('/', wurd.mw('nav,home'), (req, res, next) => {
+  res.render('index');
 });
 
 //Blog post: Example of loading content dynamically
@@ -68,11 +71,14 @@ app.get('/blog/:slug', (req, res, next) => {
 
   let postId = `blog_${slug}`;
 
-  wurd.load(`nav,${postId}`, req.wurdOptions).then(content => {
-    res.render('blog-post', {
-      postId: postId
-    });
-  });
+  wurd.load(`nav,${postId}`, req.wurd)
+    .then(content => {
+      res.render('blog-post', {
+        postId: postId,
+        wurd: content
+      });
+    })
+    .catch(next);
 });
 
 

@@ -27,7 +27,79 @@ describe('Wurd', function() {
       wurd.connect('myApp');
 
       same(wurd.app, 'myApp');
-      same(wurd.draft, false);
+      same(wurd.options.draft, false);
+      same(wurd.options.editMode, false);
+      same(wurd.options.lang, null);
+      same(wurd.options.log, false);
+    });
+
+    it('accepts options', function() {
+      let wurd = new Wurd();
+
+      wurd.connect('foo', {
+        draft: true,
+        editMode: true,
+        lang: 'es',
+        log: true
+      });
+
+      same(wurd.app, 'foo');
+      same(wurd.options.draft, true);
+      same(wurd.options.editMode, true);
+      same(wurd.options.lang, 'es');
+      same(wurd.options.log, true);
+    });
+
+    it('sets draft option to true if editMode is true', function() {
+      let wurd = new Wurd();
+
+      wurd.connect('myApp', {
+        editMode: true
+      });
+
+      same(wurd.options.draft, true);
+    });
+
+    describe('app middleware', function() {
+      it('sets editMode if edit query parameter is available', function(done) {
+        let wurd = new Wurd();
+        let mw = wurd.connect('test');
+
+        let req = {
+          query: { edit: '' }
+        };
+
+        let res = {};
+
+        mw(req, res, function() {
+          test.deepEqual(req.wurd, {
+            draft: true,
+            editMode: true
+          });
+
+          done();
+        });
+      });
+
+      it('sets lang if lang query parameter is available', function(done) {
+        let wurd = new Wurd();
+        let mw = wurd.connect('test');
+
+        let req = {
+          query: { lang: 'pt' }
+        };
+
+        let res = {};
+
+        mw(req, res, function() {
+          test.deepEqual(req.wurd, {
+            editMode: false,
+            lang: 'pt'
+          });
+
+          done();
+        });
+      });
     });
   });
 
@@ -83,13 +155,81 @@ describe('Wurd', function() {
             amet: { title: 'Amet' }
           };
 
-          test.deepEqual(content, expectedContent);
-          test.deepEqual(wurd.content, expectedContent);
+          test.deepEqual(content.value, expectedContent);
 
           done();
         })
         .catch(done);
     });
+
+    it('accepts options that override defaults', function(done) {
+      wurd.load('lorem', { log: true, lang: 'es' })
+        .then(content => {
+          let optionsArg = wurd._loadFromServer.args[0][1];
+
+          same(optionsArg.log, true);
+          same(optionsArg.lang, 'es');
+
+          done();
+        })
+        .catch(done);
+    });
+
+    it('checks cache when NOT in draft mode', function(done) {
+      wurd.load('lorem', { draft: false })
+        .then(content => {
+          same(wurd._loadFromCache.callCount, 1);
+          same(wurd._loadFromServer.callCount, 1);
+
+          done();
+        })
+        .catch(done);
+    });
+
+    it('does not check cache when in draft mode', function(done) {
+      wurd.load('lorem', { draft: true })
+        .then(content => {
+          same(wurd._loadFromCache.callCount, 0);
+          same(wurd._loadFromServer.callCount, 1);
+
+          done();
+        })
+        .catch(done);
+    });
+
+    it('forces draft to true if editMode is true', function(done) {
+      wurd.load('test', { editMode: true })
+        .then(content => {
+          same(content.editMode, true);
+          same(content.draft, true);
+
+          same(wurd._loadFromCache.callCount, 0);
+          same(wurd._loadFromServer.callCount, 1);
+
+          let optionsArg = wurd._loadFromServer.args[0][1];
+
+          same(optionsArg.draft, true);
+          same(optionsArg.editMode, true);
+
+          done();
+        })
+        .catch(done);
+    });
+
+    it('returns the result of #_makeContentHelpers()', function(done) {
+      let result = { foo: 'bar'};
+
+      this.sinon.stub(wurd, '_makeContentHelpers').returns(result);
+
+      wurd.load('test')
+        .then(content => {
+          same(content, result);
+
+          done();
+        });
+    });
+
+    it('caches fetched content');
   });
 
 
@@ -191,13 +331,13 @@ describe('Wurd', function() {
     });
 
     it('returns a promise', function() {
-      let promise = wurd._loadFromServer(['a']);
+      let promise = wurd._loadFromServer(['a'], {});
       
       test.ok(promise instanceof Promise);
     });
 
     it('fetches sections from the server', function(done) {
-      wurd._loadFromServer(['foo', 'bar'])
+      wurd._loadFromServer(['foo', 'bar'], {})
         .then(content => {
           test.deepEqual(content, {
             foo: { title: 'Foo' },
@@ -212,11 +352,11 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('caches fetched content', function(done) {
-      wurd._loadFromServer(['foo'])
+    it('passes draft and lang options', function(done) {
+      wurd._loadFromServer(['foo', 'bar'], { draft: true, lang: 'fr' })
         .then(content => {
-          same(wurd._saveToCache.callCount, 1);
-          same(wurd._saveToCache.args[0][0], content);
+          same(wurd._fetch.callCount, 1);
+          same(wurd._fetch.args[0][0], 'https://api-v3.wurd.io/apps/foo/content/foo,bar?draft=1&lang=fr');
 
           done();
         })

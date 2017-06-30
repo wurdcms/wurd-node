@@ -11,12 +11,13 @@ class Wurd {
 
   constructor() {
     this.app = null;
-    this.draft = false;
-    this.lang = null;
-    this.log = false;
 
-    // Object to store all content that's loaded
-    this.content = {};
+    this.options = {
+      draft: false,
+      editMode: false,
+      lang: null,
+      log: false
+    };
 
     this.cache = cacheManager.caching({ store: 'memory', max: 100, ttl: 60 });
   }
@@ -33,93 +34,72 @@ class Wurd {
    */
   connect(app, options = {}) {
     this.app = app;
-    this.content = {};
     
-    if (options.draft) this.draft = options.draft;
-    if (options.lang) this.lang = options.lang;
-    if (options.log) this.log = options.log;
+    Object.assign(this.options, options);
 
-    //Return express middleware that detects request-specific options such as edit/draft mode
+    if (this.options.editMode) {
+      this.options.draft = true;
+    }
+
+    //Return express middleware that detects request-specific options such as editMode and language
     return (req, res, next) => {
       let {edit, lang} = req.query;
 
       let isEditMode = (typeof edit !== 'undefined');
 
-      req.wurd = {
-        draft: isEditMode,
-        lang: lang
+      let reqOptions = {
+        editMode: isEditMode
       };
 
-      //Add wurd content helpers to the response so they are available in templates
-      res.locals.wurd = this;
-      res.locals.wurd.editMode = isEditMode;
-      res.locals.wurd.lang = lang;
+      if (isEditMode) reqOptions.draft = true;
+      if (lang) reqOptions.lang = lang;
+
+      req.wurd = req.wurd || {};
+
+      Object.assign(req.wurd, reqOptions);
 
       next();
     };
   }
 
   /**
-   * Private method, use load(ids) instead.
-   * Loads a single section of content.
-   *
-   * @param {String} id
-   */
-  _load(id) {
-    let {app, draft, lang, log} = this;
-
-    return new Promise((resolve, reject) => {
-      // Return cached version if available
-      let sectionContent = this.content[path];
-
-      if (sectionContent) {
-        log && console.info('from cache: ', path);
-        return resolve(sectionContent);
-      }
-
-      // No cached version; fetch from server
-      const params = {};
-      
-      if (draft) params.draft = 1;
-      if (lang) params.lang = lang;
-      
-      const url = `${API_URL}/apps/${app}/content/${path}?${encodeQueryString(params)}`;
-
-      log && console.info('from server: ', path, url);
-
-      return fetch(url)
-        .then(res => {
-          if (!res.ok) throw new Error(`Error loading ${path}: ${res.statusText}`);
-
-          return res.json()
-            .then(sectionContent => {
-              // Cache for next time
-              Object.assign(this.content, sectionContent);
-
-              resolve(sectionContent);
-            });
-        });
-    });
-  }
-
-  /**
    * Loads a section of content so that it's items are ready to be accessed with #get(id)
    *
-   * @param {String|Array} ids     IDs of sections to load content for. Can be an array or comma-separated string of sections to load, e.g. 'main,home'
+   * @param {String|Array} ids      IDs of sections to load content for. Can be an array or comma-separated string of sections to load, e.g. 'main,home'
+   * @param {Object} [options]      Options to override the instance defaults.
+   * 
+   * @return {Promise}
    */
-  load(ids) {
+  load(ids, options = {}) {
+    //Merge default and request options
+    options = Object.assign({}, this.options, options);
+
+    //Force draft to true if in editMode
+    if (options.editMode === true) {
+      options.draft = true;
+    }
+
     return new Promise((resolve, reject) => {
 
-      let {app, draft, log} = this;
+      let {app} = this;
 
       if (!app) return reject(new Error('Use wurd.connect(appName) before wurd.load()'));
 
       //Normalise ids to array
       if (typeof ids === 'string') ids = ids.split(',');
 
-      log && console.log('loading: ', ids);
+      options.log && console.log('loading: ', ids, options);
 
-      this._loadFromCache(ids)
+      //If in draft, skip cache
+      if (options.draft) {
+        return this._loadFromServer(ids, options)
+          .then(content => {
+            resolve(this._makeContentHelpers(content, options));
+          });
+      }
+
+      //Otherwise not in draft mode; check for cached versions
+      this._loadFromCache(ids, options)
         .then(cachedContent => {
           let uncachedIds = Object.keys(cachedContent).filter(id => {
             return cachedContent[id] === undefined;
@@ -130,17 +110,15 @@ class Wurd {
             return cachedContent;
           }
 
-          log && console.info('from server: ', uncachedIds);
-
-          return this._loadFromServer(uncachedIds)
+          return this._loadFromServer(uncachedIds, options)
             .then(fetchedContent => {
+              this._saveToCache(fetchedContent);
+
               return Object.assign(cachedContent, fetchedContent);
             });
         })
         .then(allContent => {
-          Object.assign(this.content, allContent);
-
-          resolve(allContent)
+          resolve(this._makeContentHelpers(allContent, options));
         })
         .catch(err => reject(err));
 
@@ -148,53 +126,63 @@ class Wurd {
   }
 
   /**
-   * Gets a content item by path (e.g. `section.item`)
+   * Express middleware that loads section content and makes it available to templates with helpers (get, map, etc.).
    *
-   * @param {String} path       Item path e.g. `section.item`
-   * @param {String} [backup]   Backup content to display if there is no item content
+   * @param {String|Array} ids      IDs of sections to load content for. Can be an array or comma-separated string of sections to load, e.g. 'main,home'
+   * 
+   * @return {Function} middleware
    */
-  get(path, backup) {
-    let {draft, content} = this;
+  mw(ids) {
+    return (req, res, next) => {
+      let options = req.wurd;
 
-    if (draft) {
-      backup = (typeof backup !== 'undefined') ? backup : `[${path}]`;
-    }
+      this.load(ids, options).then(content => {
+        res.locals.wurd = content;
 
-    return get(content, path) || backup;
+        next();
+      });
+    };
   }
 
-  /**
-   * Invokes a function on every content item in a list.
-   *
-   * @param {String} path     Item path e.g. `section.item`
-   * @param {Function} fn     Function to invoke
-   */
-  map(path, fn) {
-    let {content} = this;
+  _makeContentHelpers(content, options) {
+    let {draft} = options;
 
-    // Get list content, defaulting to backup with the template
-    let listContent = get(content, path) || { [Date.now()]: {} };
-    let index = 0;
+    return {
+      app: this.app,
+      lang: options.lang,
+      editMode: options.editMode,
+      draft: draft,
+      value: content,
+      get: function(path, backup) {
+        if (draft) {
+          backup = (typeof backup !== 'undefined') ? backup : `[${path}]`;
+        }
 
-    return Object.keys(listContent).map(id => {
-      let item = listContent[id];
-      let currentIndex = index;
+        return get(content, path) || backup;
+      },
+      map: function(path, fn) {
+        // Get list content, defaulting to backup with the template
+        let listContent = get(content, path) || { [Date.now()]: {} };
+        let index = 0;
 
-      index++;
+        return Object.keys(listContent).map(id => {
+          let item = listContent[id];
+          let currentIndex = index;
 
-      return fn(item, [path, id].join('.'), currentIndex);
-    });
-  }
+          index++;
 
-  el(path, type = 'span') {
-    let {draft} = this;
+          return fn(item, [path, id].join('.'), currentIndex);
+        });
+      },
+      el: function(path, type = 'span') {
+        let text = get(content, path);
 
-    let text = this.get(path);
-
-    if (draft) {
-      return `<${type} data-wurd="${path}">${text}</${type}>`;
-    } else {
-      return text;
+        if (draft) {
+          return `<${type} data-wurd="${path}">${text}</${type}>`;
+        } else {
+          return text;
+        }
+      }
     }
   }
 
@@ -203,7 +191,7 @@ class Wurd {
    *
    * @return {Promise}
    */
-  _saveToCache(allContent) {
+  _saveToCache(allContent, options) {
     let promises = Object.keys(allContent).map(id => {
       let sectionContent = allContent[id];
 
@@ -218,7 +206,7 @@ class Wurd {
    *
    * @return {Promise}
    */
-  _loadFromCache(ids) {
+  _loadFromCache(ids, options) {
     let allContent = {};
 
     let promises = ids.map(id => {
@@ -235,23 +223,20 @@ class Wurd {
    *
    * @return {Promise}
    */
-  _loadFromServer(ids) {
-    const {app, draft, lang, log} = this;
+  _loadFromServer(ids, options) {
+    const {app} = this;
 
     const sections = ids.join(',');
     const params = {};
       
-    if (draft) params.draft = 1;
-    if (lang) params.lang = lang;
+    if (options.draft) params.draft = 1;
+    if (options.lang) params.lang = options.lang;
     
     const url = `${API_URL}/apps/${app}/content/${sections}?${encodeQueryString(params)}`;
+    
+    options.log && console.info('from server: ', ids);
 
-    return this._fetch(url)
-      .then(content => {
-        this._saveToCache(content);
-
-        return content;
-      });
+    return this._fetch(url);
   }
 
   _fetch(url) {
@@ -267,9 +252,9 @@ class Wurd {
 
 
 
-let singleton = new Wurd();
+let instance = new Wurd();
 
-singleton.Wurd = Wurd;
+instance.Wurd = Wurd;
 
 
-module.exports = singleton;
+module.exports = instance;

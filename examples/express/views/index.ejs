@@ -12,23 +12,23 @@
   <body class="container">
     <%- include nav.ejs %>
 
-    <img data-wurd-img="home.heroImage" src="<%= t('home.heroImage') %>" width="100%" />
+    <img data-wurd-img="home.heroImage" src="<%= wurd.get('home.heroImage') %>" width="100%" />
 
     <div data-wurd-block="home.welcome">
-      <h2 data-wurd=".title"><%= t('home.welcome.title') %></h2>
+      <h2 data-wurd=".title"><%= wurd.get('home.welcome.title') %></h2>
 
       <div data-wurd-md=".intro" class="alert alert-info">
-        <%- t('home.welcome.intro').replace('{{name}}', 'John') %>
+        <%- wurd.get('home.welcome.intro').replace('{{name}}', 'John') %>
       </div>
 
       <div data-wurd-md=".markdown">
-        <%- markdown(t('home.welcome.markdown')) %>
+        <%- markdown(wurd.get('home.welcome.markdown')) %>
       </div>
     </div>
 
     <hr />
 
-    <h2 data-wurd="home.team.title"><%= t('home.team.title') %></h2>
+    <h2 data-wurd="home.team.title"><%= wurd.get('home.team.title') %></h2>
     <ul data-wurd-list="home.team.members" class="list-group">
       <% wurd.map('home.team.members', (item, id) => { %>
         <li data-wurd-block="<%= id %>" class="list-group-item">
