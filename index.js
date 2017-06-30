@@ -37,26 +37,26 @@ class Wurd {
     
     Object.assign(this.options, options);
 
-    if (this.options.editMode) {
+    if (this.options.editMode === true) {
       this.options.draft = true;
     }
 
     //Return express middleware that detects request-specific options such as editMode and language
     return (req, res, next) => {
-      let {edit, lang} = req.query;
+      let query = req.query || {};
 
-      let isEditMode = (typeof edit !== 'undefined');
+      req.wurd = {};
 
-      let reqOptions = {
-        editMode: isEditMode
-      };
+      if (options.editMode === 'querystring') {
+        req.wurd.editMode = (typeof query.edit !== 'undefined');
+      }
 
-      if (isEditMode) reqOptions.draft = true;
-      if (lang) reqOptions.lang = lang;
+      if (options.langMode === 'querystring' && query.lang) {
+        req.wurd.lang = query.lang;
+      }
 
-      req.wurd = req.wurd || {};
-
-      Object.assign(req.wurd, reqOptions);
+      //Force draft to true if editMode is on
+      if (req.wurd.editMode) req.wurd.draft = true;
 
       next();
     };
@@ -95,7 +95,8 @@ class Wurd {
         return this._loadFromServer(ids, options)
           .then(content => {
             resolve(this._makeContentHelpers(content, options));
-          });
+          })
+          .catch(reject);
       }
 
       //Otherwise not in draft mode; check for cached versions
@@ -140,7 +141,8 @@ class Wurd {
         res.locals.wurd = content;
 
         next();
-      });
+      })
+      .catch(next);
     };
   }
 

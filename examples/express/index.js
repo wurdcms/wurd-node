@@ -43,7 +43,8 @@ app.use('/', express.static(path.join(__dirname, 'public')));
 
 
 app.use(wurd.connect('example', {
-  editMode: 'querystring',
+  editMode: 'querystring',    // Set editMode to on when the 'edit' query parameter is set on the request URL (e.g. '?edit')
+  langMode: 'querystring',    // Set the language when the 'lang' query parameter is set on the request URL (e.g. `?lang=es`)
   log: true
 }));
 

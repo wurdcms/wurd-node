@@ -61,9 +61,11 @@ describe('Wurd', function() {
     });
 
     describe('app middleware', function() {
-      it('sets editMode if edit query parameter is available', function(done) {
+      it('with editMode === "querystring" option: sets editMode if edit query parameter is available', function(done) {
         let wurd = new Wurd();
-        let mw = wurd.connect('test');
+        let mw = wurd.connect('test', {
+          editMode: 'querystring'
+        });
 
         let req = {
           query: { edit: '' }
@@ -81,9 +83,11 @@ describe('Wurd', function() {
         });
       });
 
-      it('sets lang if lang query parameter is available', function(done) {
+      it('with langMode === "querystring" option: sets lang if lang query parameter is available', function(done) {
         let wurd = new Wurd();
-        let mw = wurd.connect('test');
+        let mw = wurd.connect('test', {
+          langMode: 'querystring'
+        });
 
         let req = {
           query: { lang: 'pt' }
@@ -93,7 +97,6 @@ describe('Wurd', function() {
 
         mw(req, res, function() {
           test.deepEqual(req.wurd, {
-            editMode: false,
             lang: 'pt'
           });
 
@@ -230,6 +233,11 @@ describe('Wurd', function() {
     });
 
     it('caches fetched content');
+  });
+
+
+  describe('#mw()', function() {
+    it('returns route middleware that loads options from request');
   });
 
 
