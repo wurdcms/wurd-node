@@ -24,9 +24,9 @@ const app = require('express')();
 const wurd = require('wurd');
 
 // App middleware can be used to trigger editing mode
-app.use(wurd.connect('myApp'), {
+app.use(wurd.connect('myApp', {
   editMode: 'querystring'     // Activate edit mode when the URL has an 'edit' query parameter
-});
+}));
 
 // Route middleware loads content onto the response
 app.use('/', wurd.mw('homepage'), (req, res, next) => {
