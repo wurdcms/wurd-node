@@ -1,6 +1,6 @@
 {
   "name": "wurd",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Wurd CMS client for Node",
   "repository": {
     "type": "git",
@@ -8,26 +8,23 @@
   },
   "main": "index.js",
   "dependencies": {
-    "cache-manager": "^2.4.0",
+    "cache-manager": "^2.5.0",
     "get-property-value": "^2.0.0",
-    "node-fetch": "^1.6.3"
+    "node-fetch": "^1.7.3"
   },
   "devDependencies": {
-    "async": "^2.5.0",
-    "ejs": "^2.5.6",
-    "express": "^4.15.3",
+    "async": "^2.6.0",
+    "ejs": "^2.5.7",
+    "express": "^4.16.2",
     "marked": "^0.3.6",
-    "mocha": "^3.4.2",
-    "nodemon": "^1.11.0",
-    "sinon": "^2.3.6"
+    "mocha": "^4.0.1",
+    "nodemon": "^1.12.1",
+    "sinon": "^4.1.2"
   },
   "scripts": {
     "example": "./node_modules/.bin/nodemon examples/express",
     "test": "NODE_ENV=test node_modules/.bin/mocha --recursive *.test.js --watch --reporter dot"
   },
   "author": "Charlie Davison",
-  "engines": {
-    "node": "6.9.x"
-  },
   "homepage": "https://github.com/wurdcms/wurd-node"
 }
