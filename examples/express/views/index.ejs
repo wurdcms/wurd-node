@@ -12,17 +12,17 @@
   <body class="container">
     <%- include nav.ejs %>
 
-    <img data-wurd-img="home.heroImage" src="<%= wurd.get('home.heroImage') %>" width="100%" />
+    <img data-wurd-img="home.heroImage" src="<%= wurd.text('home.heroImage') %>" width="100%" />
 
     <div data-wurd-block="home.welcome">
-      <h2 data-wurd=".title"><%= wurd.get('home.welcome.title') %></h2>
+      <h2 data-wurd=".title"><%= wurd.text('home.welcome.title') %></h2>
 
       <div data-wurd-md=".intro" class="alert alert-info">
-        <%- wurd.get('home.welcome.intro').replace('{{name}}', 'John') %>
+        <%- wurd.text('home.welcome.intro', {name: 'John'}) %>
       </div>
 
       <div data-wurd-md=".markdown">
-        <%- markdown(wurd.get('home.welcome.markdown')).replace('{{date}}', new Date().toLocaleDateString()) %>
+        <%- markdown(wurd.text('home.welcome.markdown', {date: new Date().toLocaleDateString() })) %>
       </div>
     </div>
 
