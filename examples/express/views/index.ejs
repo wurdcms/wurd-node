@@ -22,7 +22,7 @@
       </div>
 
       <div data-wurd-md=".markdown">
-        <%- markdown(wurd.get('home.welcome.markdown')) %>
+        <%- markdown(wurd.get('home.welcome.markdown')).replace('{{date}}', new Date().toLocaleDateString()) %>
       </div>
     </div>
 
