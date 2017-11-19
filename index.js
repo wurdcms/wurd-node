@@ -206,16 +206,16 @@ class Wurd {
         let listContent = get(content, path) || { [Date.now()]: {} };
         let index = 0;
 
-        return Object.keys(listContent).map(id => {
+        return Object.keys(listContent).sort().map(id => {
           let item = listContent[id];
           let currentIndex = index;
 
           index++;
 
-          return fn(item, [path, id].join('.'), currentIndex);
+          return fn.call(undefined, item, [path, id].join('.'), currentIndex);
         });
       },
-      
+
       el: function(path, type = 'span') {
         let text = get(content, path);
 
