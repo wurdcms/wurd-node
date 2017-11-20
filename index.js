@@ -203,12 +203,14 @@ class Wurd {
 
       map: function(path, fn) {
         // Get list content, defaulting to backup with the template
-        let listContent = get(content, path) || { [Date.now()]: {} };
+        const listContent = get(content, path) || { [Date.now()]: {} };
         let index = 0;
 
-        return Object.keys(listContent).sort().map(id => {
-          let item = listContent[id];
-          let currentIndex = index;
+        const ids = Object.keys(listContent).sort();
+
+        return ids.map(id => {
+          const item = listContent[id];
+          const currentIndex = index;
 
           index++;
 
@@ -217,7 +219,7 @@ class Wurd {
       },
 
       el: function(path, type = 'span') {
-        let text = get(content, path);
+        const text = get(content, path);
 
         if (draft) {
           return `<${type} data-wurd="${path}">${text}</${type}>`;
