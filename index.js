@@ -180,8 +180,6 @@ class Wurd {
        * @return {Mixed}
        */
        text(path, vars) {
-        const {draft} = this;
-
         let text = get(content, path);
 
         if (typeof text === 'undefined') {
