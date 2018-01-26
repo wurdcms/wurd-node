@@ -13,11 +13,9 @@
     <%- include nav.ejs %>
 
     <% wurd.block(postId, function({path, text, markdown, el}) { %>
-      <div data-wurd-block="<%= path %>">
-        <h1><%- el('title') %></h1>
+      <h1><%- el('title') %></h1>
 
-        <div data-wurd-md=".content"><%- markdown('content') %></div>
-      </div>
+      <%- el('content', null, { markdown: true }) %>
     <% }); %>
 
 

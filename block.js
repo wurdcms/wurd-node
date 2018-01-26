@@ -137,7 +137,7 @@ module.exports = class Block {
    * @param {Object} [vars]               Optional variables to replace in the text
    * @param {Object} [options]
    * @param {Boolean} [options.markdown]  Parses text as markdown
-   * @param {String} [options.type]       HTML node type, defaults to 'span'
+   * @param {String} [options.type]       HTML node type, defaults to 'span', or 'div' for markdown content
    */
   el(path, vars, options = {}) {
     const fullPath = (this.path) ? [this.path, path].join('.') : path;
@@ -145,7 +145,8 @@ module.exports = class Block {
     const editor = (vars || options.markdown) ? 'data-wurd-md' : 'data-wurd';
 
     if (this.draft) {
-      const type = options.type || 'span';
+      let type = options.type || 'span';
+      if (options.markdown) type = 'div';
       
       return `<${type} ${editor}="${fullPath}">${text}</${type}>`;
     } else {
