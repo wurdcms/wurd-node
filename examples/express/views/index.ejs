@@ -13,7 +13,7 @@
     <% }); %>
   </head>
   <body class="container">
-    <%- include nav.ejs %>
+    <%- include nav %>
 
     <% wurd.block('home', ({id, text, markdown, map, el}) => { %>
       <img data-wurd-img="<%= id('heroImage') %>" src="<%= text('heroImage') %>" width="100%" />
@@ -44,6 +44,7 @@
           </li>
         <% }) %>
       </ul>
+
 
       <% if (wurd.editMode) { %>
         <div style="position: fixed; top: 0; right: 0;">
