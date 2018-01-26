@@ -1,7 +1,6 @@
 const http = require('http');
 const path = require('path');
 const express = require('express');
-const markdown = require('marked');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,7 +23,7 @@ app.use(wurd.connect('example', {
 
 //Simple page, using middleware to load content
 app.get('/', wurd.mw('nav,home'), (req, res, next) => {
-  res.render('index', { markdown: markdown });
+  res.render('index');
 });
 
 
@@ -36,8 +35,7 @@ app.get('/blog/:slug', (req, res, next) => {
     .then(content => {
       res.render('blog-post', {
         postId: postId,
-        wurd: content,
-        markdown: markdown
+        wurd: content
       });
     })
     .catch(next);
