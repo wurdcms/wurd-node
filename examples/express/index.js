@@ -7,7 +7,7 @@ const server = http.createServer(app);
 
 
 //Set up Wurd
-const wurd = require('../../index'); // Replace with require('wurd')
+const wurd = require('../../src/index'); // Replace with require('wurd')
 
 
 //Basic setup

@@ -6,7 +6,6 @@ const {encodeQueryString, replaceVars} = require('./utils');
 const Block = require('./block');
 
 const env = process.env || {};
-//const WIDGET_URL = env.WURD_WIDGET_URL || 'https://edit-v3.wurd.io/widget.js';
 const API_URL = env.WURD_API_URL || 'https://api-v3.wurd.io';
 
 

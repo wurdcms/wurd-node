@@ -254,8 +254,6 @@ describe('Wurd', function() {
     it('returns a Block, with custom options', function(done) {
       wurd.load('test', { editMode: true, lang: 'es' })
         .then(block => {
-          console.log(block)
-
           test.ok(block instanceof Block);
 
           same(block.app, 'foo');
