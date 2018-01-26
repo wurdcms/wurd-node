@@ -1,6 +1,6 @@
 {
   "name": "wurd",
-  "version": "5.0.1",
+  "version": "6.0.0",
   "description": "Wurd CMS client for Node",
   "repository": {
     "type": "git",
@@ -10,13 +10,13 @@
   "dependencies": {
     "cache-manager": "^2.5.0",
     "get-property-value": "^2.0.0",
-    "node-fetch": "^1.7.3"
+    "node-fetch": "^1.7.3",
+    "marked": "^0.3.6"
   },
   "devDependencies": {
     "async": "^2.6.0",
     "ejs": "^2.5.7",
     "express": "^4.16.2",
-    "marked": "^0.3.6",
     "mocha": "^4.0.1",
     "nodemon": "^1.12.1",
     "sinon": "^4.1.2"

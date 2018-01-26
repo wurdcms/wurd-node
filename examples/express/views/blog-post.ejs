@@ -12,11 +12,13 @@
   <body class="container">
     <%- include nav.ejs %>
 
-    <div data-wurd-block="<%= postId %>">
-      <h1 data-wurd=".title"><%= wurd.text(`${postId}.title`) %></h1>
+    <% wurd.block(postId, function({path, text, markdown, el}) { %>
+      <div data-wurd-block="<%= path %>">
+        <h1><%- el('title') %></h1>
 
-      <div data-wurd-md=".content"><%- markdown(wurd.text(`${postId}.content`)) %></div>
-    </div>
+        <div data-wurd-md=".content"><%- markdown('content') %></div>
+      </div>
+    <% }); %>
 
 
     <% if (wurd.editMode) { %>

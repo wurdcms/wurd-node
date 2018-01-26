@@ -12,32 +12,38 @@
   <body class="container">
     <%- include nav.ejs %>
 
-    <img data-wurd-img="home.heroImage" src="<%= wurd.text('home.heroImage') %>" width="100%" />
+    <% wurd.block('home', ({path, text, markdown, map, el}) => { %>
+      <div data-wurd-block="<%= path %>">
+        <img data-wurd-img=".heroImage" src="<%= text('heroImage') %>" width="100%" />
 
-    <div data-wurd-block="home.welcome">
-      <h2 data-wurd=".title"><%= wurd.text('home.welcome.title') %></h2>
+        <h2><%- el('welcome.title') %></h2>
 
-      <div data-wurd-md=".intro" class="alert alert-info">
-        <%- wurd.text('home.welcome.intro', {name: 'John'}) %>
+        <div class="alert alert-info">
+          <%- el('welcome.intro', {name: 'John'}) %>
+        </div>
+
+        <div class="well">
+          <%- el('welcome.markdown', {
+            date: new Date().toLocaleDateString()
+          }, { markdown: true, type: 'div' }) %>
+        </div>
+
+
+        <hr />
+
+
+        <h2><%- el('team.title') %></h2>
+
+        <ul data-wurd-list=".team.members" class="list-group">
+          <% map('team.members', ({path, text, el}) => { %>
+            <li data-wurd-block="<%= path %>" class="list-group-item">
+              <img data-wurd-img=".image" src="<%= text('image') %>" width="75" />
+              <%- el('name') %>
+            </li>
+          <% }) %>
+        </ul>
       </div>
-
-      <div data-wurd-md=".markdown">
-        <%- markdown(wurd.text('home.welcome.markdown', {date: new Date().toLocaleDateString() })) %>
-      </div>
-    </div>
-
-    <hr />
-
-    <h2><%- wurd.el('home.team.title') %></h2>
-    <ul data-wurd-list="home.team.members" class="list-group">
-      <% wurd.map('home.team.members', (item, id) => { %>
-        <li data-wurd-block="<%= id %>" class="list-group-item">
-          <img data-wurd-img=".image" src="<%= item.image %>" width="75" />
-          <span data-wurd=".name"><%= item.name %></span>
-        </li>
-      <% }) %>
-    </ul>
-
+    <% }); %>
 
     <% if (wurd.editMode) { %>
       <script src="https://edit-v3.wurd.io/widget.js" data-app="example"></script>

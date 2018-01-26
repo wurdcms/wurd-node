@@ -1,7 +1,9 @@
-<nav class="navbar navbar-default">
-  <ul class="nav navbar-nav">
-    <li><a data-wurd="nav.home" href="/"><%= wurd.text('nav.home') %></a></li>
-    <li><a data-wurd="nav.blog1" href="/blog/post1"><%= wurd.text('nav.blog1') %></a></li>
-    <li><a data-wurd="nav.blog2" href="/blog/post2"><%= wurd.text('nav.blog2') %></a></li>
-  </ul>
-</nav>
+<% wurd.block('nav', function({text, el}) { %>
+  <nav class="navbar navbar-default">
+    <ul class="nav navbar-nav">
+      <li><a href="/"><%- el('home') %></a></li>
+      <li><a href="/blog/post1"><%- el('blog1') %></a></li>
+      <li><a href="/blog/post2"><%- el('blog2') %></a></li>
+    </ul>
+  </nav>
+<% }); %>

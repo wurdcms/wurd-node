@@ -1,9 +1,11 @@
 const cacheManager = require('cache-manager');
 const get = require('get-property-value');
 const fetch = require('node-fetch');
-const {encodeQueryString, replaceVars} = require('./utils');
-const env = process.env || {};
 
+const {encodeQueryString, replaceVars} = require('./utils');
+const Block = require('./block');
+
+const env = process.env || {};
 const WIDGET_URL = env.WURD_WIDGET_URL || 'https://edit-v3.wurd.io/widget.js';
 const API_URL = env.WURD_API_URL || 'https://api-v3.wurd.io';
 
@@ -95,7 +97,7 @@ class Wurd {
       if (options.draft) {
         return this._loadFromServer(ids, options)
           .then(content => {
-            resolve(this._makeContentHelpers(content, options));
+            resolve(new Block(app, null, content, options));
           })
           .catch(reject);
       }
@@ -120,7 +122,7 @@ class Wurd {
             });
         })
         .then(allContent => {
-          resolve(this._makeContentHelpers(allContent, options));
+          resolve(new Block(app, null, allContent, options));
         })
         .catch(err => reject(err));
 
@@ -145,87 +147,6 @@ class Wurd {
       })
       .catch(next);
     };
-  }
-
-  _makeContentHelpers(content, options) {
-    let {draft} = options;
-
-    return {
-      app: this.app,
-      lang: options.lang,
-      editMode: options.editMode,
-      draft: draft,
-      value: content,
-
-      /**
-       * Gets a content item by path (e.g. `section.item`).
-       * Will return both text and/or objects, depending on the contents of the item
-       *
-       * @param {String} path       Item path e.g. `section.item`
-       *
-       * @return {Mixed}
-       */
-      get: function(path) {
-        return get(content, path);
-      },
-
-      /**
-       * Gets text content of an item by path (e.g. `section.item`).
-       * If the item is not a string, e.g. you have passed the path of an object,
-       * an empty string will be returned, unless in draft mode in which case a warning will be returned.
-       *
-       * @param {String} path       Item path e.g. `section.item`
-       * @param {Object} [vars]     Variables to replace in the text
-       *
-       * @return {Mixed}
-       */
-       text(path, vars) {
-        let text = get(content, path);
-
-        if (typeof text === 'undefined') {
-          return (draft) ? `[${path}]` : '';
-        }
-
-        if (typeof text !== 'string') {
-          console.warn(`Tried to get object as string: ${path}`);
-
-          return (draft) ? `[${path}]` : '';
-        }
-
-        if (vars) {
-          text = replaceVars(text, vars);
-        }
-
-        return text;
-      },
-
-      map: function(path, fn) {
-        // Get list content, defaulting to backup with the template
-        const listContent = get(content, path) || { [Date.now()]: {} };
-        let index = 0;
-
-        const ids = Object.keys(listContent).sort();
-
-        return ids.map(id => {
-          const item = listContent[id];
-          const currentIndex = index;
-
-          index++;
-
-          return fn.call(undefined, item, [path, id].join('.'), currentIndex);
-        });
-      },
-
-      el: function(path, type = 'span') {
-        const text = get(content, path);
-
-        if (draft) {
-          return `<${type} data-wurd="${path}">${text}</${type}>`;
-        } else {
-          return `<${type}>${text}</${type}>`;
-        }
-      }
-    }
   }
 
   /**
