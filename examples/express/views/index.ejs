@@ -12,37 +12,35 @@
   <body class="container">
     <%- include nav.ejs %>
 
-    <% wurd.block('home', ({path, text, markdown, map, el}) => { %>
-      <div data-wurd-block="<%= path %>">
-        <img data-wurd-img=".heroImage" src="<%= text('heroImage') %>" width="100%" />
+    <% wurd.block('home', ({id, text, markdown, map, el}) => { %>
+      <img data-wurd-img="<%= id('heroImage') %>" src="<%= text('heroImage') %>" width="100%" />
 
-        <h2><%- el('welcome.title') %></h2>
+      <h2><%- el('welcome.title') %></h2>
 
-        <div class="alert alert-info">
-          <%- el('welcome.intro', {name: 'John'}) %>
-        </div>
-
-        <div class="well">
-          <%- el('welcome.markdown', {
-            date: new Date().toLocaleDateString()
-          }, { markdown: true }) %>
-        </div>
-
-
-        <hr />
-
-
-        <h2><%- el('team.title') %></h2>
-
-        <ul data-wurd-list=".team.members" class="list-group">
-          <% map('team.members', ({path, text, el}) => { %>
-            <li data-wurd-block="<%= path %>" class="list-group-item">
-              <img data-wurd-img=".image" src="<%= text('image') %>" width="75" />
-              <%- el('name') %>
-            </li>
-          <% }) %>
-        </ul>
+      <div class="alert alert-info">
+        <%- el('welcome.intro', {name: 'John'}) %>
       </div>
+
+      <div class="well">
+        <%- el('welcome.markdown', {
+          date: new Date().toLocaleDateString()
+        }, { markdown: true }) %>
+      </div>
+
+
+      <hr />
+
+
+      <h2><%- el('team.title') %></h2>
+
+      <ul data-wurd-list="<%= id('team.members') %>" class="list-group">
+        <% map('team.members', ({id, text, el}) => { %>
+          <li class="list-group-item">
+            <img data-wurd-img="<%= id('image') %>" src="<%= text('image') %>" width="75" />
+            <%- el('name') %>
+          </li>
+        <% }) %>
+      </ul>
     <% }); %>
 
     <% if (wurd.editMode) { %>

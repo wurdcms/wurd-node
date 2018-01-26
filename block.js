@@ -18,12 +18,26 @@ module.exports = class Block {
 
     // Ensure this is bound properly, required for when using object destructuring
     // E.g. wurd.with('user', ({text}) => text('age'));
+    this.id = this.id.bind(this);
     this.get = this.get.bind(this);
     this.text = this.text.bind(this);
     this.map = this.map.bind(this);
     this.block = this.block.bind(this);
     this.markdown = this.markdown.bind(this);
     this.el = this.el.bind(this);
+  }
+
+  /**
+   * Gets the ID of a child content item by path (e.g. id('item') returns `block.item`)
+   *
+   * @param {String} path       Item path e.g. `section.item`
+   *
+   * @return {String}
+   */
+  id(path) {
+    if (!path) return this.path;
+    
+    return this.path ? [this.path, path].join('.') : path;
   }
 
   /**
@@ -95,13 +109,16 @@ module.exports = class Block {
   }
 
   /**
-   * Creates a new Block scoped to the child content
+   * Creates a new Block scoped to the child content.
+   * Optionally runs a callback with the block as the argument
    *
    * @param {String} path
    * @param {Function} [fn]     Optional callback that receives the child block object
+   *
+   * @return {Block}
    */
   block(path, fn) {
-    const blockPath = (this.path) ? [this.path, path].join('.') : path;
+    const blockPath = this.id(path);
     const blockContent = this.get(path);
 
     const childBlock = new Block(this.app, blockPath, blockContent, this.options);
@@ -128,7 +145,9 @@ module.exports = class Block {
   }
 
   /**
-   * Creates an editable element; this is a shortcut for writing out the HTML tag
+   * Returns an HTML string for an editable element.
+   * 
+   * This is a shortcut for writing out the HTML tag
    * with the wurd editor attributes and the text content.
    * 
    * Use this or create a similar helper to avoid having to type out the item paths twice.
@@ -138,9 +157,11 @@ module.exports = class Block {
    * @param {Object} [options]
    * @param {Boolean} [options.markdown]  Parses text as markdown
    * @param {String} [options.type]       HTML node type, defaults to 'span', or 'div' for markdown content
+   * 
+   * @return {String}
    */
   el(path, vars, options = {}) {
-    const fullPath = (this.path) ? [this.path, path].join('.') : path;
+    const id = this.id(path);
     const text = options.markdown ? this.markdown(path, vars) : this.text(path, vars);
     const editor = (vars || options.markdown) ? 'data-wurd-md' : 'data-wurd';
 
@@ -148,7 +169,7 @@ module.exports = class Block {
       let type = options.type || 'span';
       if (options.markdown) type = 'div';
       
-      return `<${type} ${editor}="${fullPath}">${text}</${type}>`;
+      return `<${type} ${editor}="${id}">${text}</${type}>`;
     } else {
       return text;
     }
