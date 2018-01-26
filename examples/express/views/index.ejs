@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta http-equiv="x-ua-compatible" content="IE=edge" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
     
-    <title>Wurd example</title>
+    <% wurd.block('home.meta', ({text}) => { %>
+      <title><%= text('title') %></title>
+      <meta name="description" content="<%= text('description') %>" />
+    <% }); %>
   </head>
   <body class="container">
     <%- include nav.ejs %>
@@ -33,7 +36,7 @@
 
       <h2><%- el('team.title') %></h2>
 
-      <ul data-wurd-list="<%= id('team.members') %>" class="list-group">
+      <ul data-wurd-list="<%= id('team.members') %>" data-wurd-list-props="name" class="list-group">
         <% map('team.members', ({id, text, el}) => { %>
           <li class="list-group-item">
             <img data-wurd-img="<%= id('image') %>" src="<%= text('image') %>" width="75" />
@@ -41,11 +44,17 @@
           </li>
         <% }) %>
       </ul>
-    <% }); %>
 
-    <% if (wurd.editMode) { %>
-      <script src="https://edit-v3.wurd.io/widget.js" data-app="example"></script>
-    <% } %>
+      <% if (wurd.editMode) { %>
+        <div style="position: fixed; top: 0; right: 0;">
+          <div data-wurd-obj="<%= id('meta') %>" data-wurd-obj-props="title,description">
+            Metadata
+          </div>
+        </div>
+
+        <script src="https://edit-v3.wurd.io/widget.js" data-app="example"></script>
+      <% } %>
+    <% }); %>
 
   </body>
 </html>
