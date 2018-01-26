@@ -36,7 +36,7 @@ module.exports = class Block {
    */
   id(path) {
     if (!path) return this.path;
-    
+
     return this.path ? [this.path, path].join('.') : path;
   }
 
@@ -89,8 +89,8 @@ module.exports = class Block {
    * @param {Function} fn     Callback function with signature ({Function} itemBlock, {Number} index)
    */
   map(path, fn) {
-    // Get list content, defaulting to backup with the template
     const listContent = this.get(path) || { [Date.now()]: {} };
+
     let index = 0;
 
     const keys = Object.keys(listContent).sort();

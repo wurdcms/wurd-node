@@ -1,9 +1,12 @@
 const test = require('assert');
 const async = require('async');
 const sinon = require('sinon');
+
 const Wurd = require('./index').Wurd;
+const Block = require('./block');
 
 const same = test.strictEqual;
+
 
 describe('Wurd', function() {
   beforeEach(function() {
@@ -158,7 +161,7 @@ describe('Wurd', function() {
             amet: { title: 'Amet' }
           };
 
-          test.deepEqual(content.value, expectedContent);
+          test.deepEqual(content.content, expectedContent);
 
           done();
         })
@@ -219,14 +222,59 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('returns the result of #_makeContentHelpers()', function(done) {
-      let result = { foo: 'bar'};
-
-      this.sinon.stub(wurd, '_makeContentHelpers').returns(result);
-
+    it('returns a Block', function(done) {
       wurd.load('test')
-        .then(content => {
-          same(content, result);
+        .then(block => {
+          test.ok(block instanceof Block);
+
+          same(block.app, 'foo');
+          same(block.path, null);
+          same(block.editMode, false);
+          same(block.draft, false);
+          same(block.lang, null);
+
+          test.deepEqual(block.content, {
+            lorem: { title: 'Lorem' },
+            ipsum: { title: 'Ipsum' },
+            dolor: { title: 'Dolor' },
+            amet: { title: 'Amet' }
+          });
+
+          test.deepEqual(block.options, {
+            draft: false,
+            editMode: false, 
+            lang: null,
+            log: false
+          });
+
+          done();
+        });
+    });
+
+    it('returns a Block, with custom options', function(done) {
+      wurd.load('test', { editMode: true, lang: 'es' })
+        .then(block => {
+          console.log(block)
+
+          test.ok(block instanceof Block);
+
+          same(block.app, 'foo');
+          same(block.path, null);
+          same(block.editMode, true);
+          same(block.draft, true);
+          same(block.lang, 'es');
+
+          test.deepEqual(block.content, {
+            ipsum: { title: 'Ipsum' },
+            amet: { title: 'Amet' }
+          });
+
+          test.deepEqual(block.options, {
+            draft: true,
+            editMode: true, 
+            lang: 'es',
+            log: false
+          });
 
           done();
         });
