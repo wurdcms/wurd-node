@@ -25,6 +25,16 @@ module.exports = class Block {
     this.block = this.block.bind(this);
     this.markdown = this.markdown.bind(this);
     this.el = this.el.bind(this);
+
+    // Add helper functions to the block for convenience.
+    // These are bound to the block for access to this.text(), this.get() etc.
+    if (options.blockHelpers) {
+      Object.keys(options.blockHelpers).forEach(key => {
+        const fn = options.blockHelpers[key];
+
+        this[key] = fn.bind(this);
+      });
+    }
   }
 
   /**
