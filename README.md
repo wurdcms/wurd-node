@@ -13,7 +13,7 @@ wurd.connect('myApp', {
 
 wurd.load('homepage')
   .then(content => {
-    console.log(content.get('homepage.title')); // 'Hello world'
+    console.log(content.text('homepage.title')); // 'Hello world'
   });
 ```
 
@@ -30,13 +30,26 @@ app.use(wurd.connect('myApp', {
 
 // Route middleware loads content onto the response
 app.use('/', wurd.mw('homepage'), (req, res, next) => {
-  res.render('homepage.ejs');     // In the template file you can access content with <%= wurd.get('homepage.title') %>
+  res.render('homepage.ejs');     // In the template file you can access content with <%= wurd.text('homepage.title') %>
 });
 ```
 
 `homepage.ejs`
 ```html
-<h1><%- wurd.el('homepage.title') %></h1>
+<html>
+  <head>
+    <title><%= wurd.text('main.brandName') %></title>
+  </head>
+  <body>
+    <% wurd.block('homepage', ({text, el}) => { %>
+      <h1><%- el('title') %></h1>
+
+      <div class="alert alert-info">
+        <%- el('welcome', {name: 'John'}); // 2nd argument replaces {{mustache}} style variables %>
+      </div>
+    <% }); %>
+  </body>
+</html>
 ```
 
 See more in the [examples](https://github.com/wurdcms/wurd-node/tree/master/examples) folder or run them with `npm run example`.
@@ -53,10 +66,10 @@ npm install wurd
 2. Connect to a Wurd app with `wurd.connect('appName', { editMode: true })`. 
 3. Load top level 'sections' of content you'll be using with `wurd.load('section')` (or use middleware: `wurd.mw('section')`).
 4. In your views/templates etc., get content with `wurd.get('section.item')`.
-5. To make regions editable, simply add the `data-wurd` attributes to the HTML.  For example (using EJS style template tags):
+5. To make regions editable, use the `wurd.el` helpers to create editable text regions.
 
 ```html
-<h1 data-wurd="homepage.title"><%= wurd.get('homepage.title') %></h1>
+<h1><%= wurd.el('homepage.title') %></h1>
 ```
 
 ## Other modules
