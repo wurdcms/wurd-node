@@ -33,3 +33,18 @@ exports.replaceVars = function(text, vars = {}) {
 
   return text;
 };
+
+
+/**
+ * Returns the key for caching a block of content, including the language
+ *
+ * @param {String} id
+ * @param {Object} [options]
+ *
+ * @return {String} cacheId
+ */
+exports.getCacheId = function(id, options = {}) {
+  let lang = options.lang || ''
+
+  return `${lang}/${id}`;
+};

@@ -305,7 +305,7 @@ describe('Wurd', function() {
       test.ok(promise instanceof Promise);
     });
 
-    it('saves content to the cache, keyed by section ID', function(done) {
+    it('saves content to the cache - with default language', function(done) {
       let content = {
         foo: { title: 'Foo' },
         bar: { title: 'Bar' }
@@ -314,8 +314,31 @@ describe('Wurd', function() {
       wurd._saveToCache(content)
         .then(() => {
           async.auto({
-            foo: cb => wurd.cache.get('foo', cb),
-            bar: cb => wurd.cache.get('bar', cb)
+            foo: cb => wurd.cache.get('/foo', cb),
+            bar: cb => wurd.cache.get('/bar', cb)
+          }, (err, results) => {
+            if (err) return done(err);
+
+            test.deepEqual(results.foo, {title: 'Foo'});
+            test.deepEqual(results.bar, {title: 'Bar'});
+
+            done();
+          });
+        })
+        .catch(done);
+    });
+
+    it('saves content to the cache - with specified language', function(done) {
+      let content = {
+        foo: { title: 'Foo' },
+        bar: { title: 'Bar' }
+      };
+
+      wurd._saveToCache(content, { lang: 'fr' })
+        .then(() => {
+          async.auto({
+            foo: cb => wurd.cache.get('fr/foo', cb),
+            bar: cb => wurd.cache.get('fr/bar', cb)
           }, (err, results) => {
             if (err) return done(err);
 
@@ -333,15 +356,9 @@ describe('Wurd', function() {
   describe('#_loadFromCache()', function() {
     let wurd;
 
-    beforeEach(function(done) {
+    beforeEach(function() {
       wurd = new Wurd();
       wurd.connect('foo');
-
-      async.auto({
-        lorem: cb => wurd.cache.set('lorem', { title: 'Lorem' }, cb),
-        ipsum: cb => wurd.cache.set('ipsum', { title: 'Ipsum' }, cb),
-        dolor: cb => wurd.cache.set('dolor', { title: 'Dolor' }, cb),
-      }, done);
     });
 
     it('returns a promise', function() {
@@ -350,17 +367,50 @@ describe('Wurd', function() {
       test.ok(promise instanceof Promise);
     });
 
-    it('returns items that are in the cache', function(done) {
-      wurd._loadFromCache(['lorem', 'dolor', 'bla'])
-        .then(content => {
-          test.deepEqual(content.lorem, { title: 'Lorem' });
-          test.deepEqual(content.dolor, { title: 'Dolor' });
+    describe('without specified language (uses default)', function() {
+      beforeEach(function(done) {
+        async.auto({
+          lorem: cb => wurd.cache.set('/lorem', { title: 'Lorem' }, cb),
+          ipsum: cb => wurd.cache.set('/ipsum', { title: 'Ipsum' }, cb),
+          dolor: cb => wurd.cache.set('/dolor', { title: 'Dolor' }, cb),
+        }, done);
+      });
 
-          same(content.bla, undefined);
+      it('returns items that are in the cache - with default language', function(done) {
+        wurd._loadFromCache(['lorem', 'dolor', 'bla'])
+          .then(content => {
+            test.deepEqual(content.lorem, { title: 'Lorem' });
+            test.deepEqual(content.dolor, { title: 'Dolor' });
 
-          done();
-        })
-        .catch(done);
+            same(content.bla, undefined);
+
+            done();
+          })
+          .catch(done);
+      });
+    });
+
+    describe('WITH specified language', function() {
+      beforeEach(function(done) {
+        async.auto({
+          lorem: cb => wurd.cache.set('fr/lorem', { title: 'Lorem' }, cb),
+          ipsum: cb => wurd.cache.set('fr/ipsum', { title: 'Ipsum' }, cb),
+          dolor: cb => wurd.cache.set('fr/dolor', { title: 'Dolor' }, cb),
+        }, done);
+      });
+
+      it('returns items that are in the cache - with default language', function(done) {
+        wurd._loadFromCache(['lorem', 'dolor', 'bla'], { lang: 'fr' })
+          .then(content => {
+            test.deepEqual(content.lorem, { title: 'Lorem' });
+            test.deepEqual(content.dolor, { title: 'Dolor' });
+
+            same(content.bla, undefined);
+
+            done();
+          })
+          .catch(done);
+      });
     });
   });
 

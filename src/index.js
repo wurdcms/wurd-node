@@ -2,7 +2,7 @@ const cacheManager = require('cache-manager');
 const get = require('get-property-value');
 const fetch = require('node-fetch');
 
-const {encodeQueryString, replaceVars} = require('./utils');
+const {encodeQueryString, replaceVars, getCacheId} = require('./utils');
 const Block = require('./block');
 
 const env = process.env || {};
@@ -115,7 +115,7 @@ class Wurd {
 
           return this._loadFromServer(uncachedIds, options)
             .then(fetchedContent => {
-              this._saveToCache(fetchedContent);
+              this._saveToCache(fetchedContent, options);
 
               return Object.assign(cachedContent, fetchedContent);
             });
@@ -153,11 +153,11 @@ class Wurd {
    *
    * @return {Promise}
    */
-  _saveToCache(allContent, options) {
+  _saveToCache(allContent, options = {}) {
     let promises = Object.keys(allContent).map(id => {
       let sectionContent = allContent[id];
 
-      return this.cache.set(id, sectionContent);
+      return this.cache.set(getCacheId(id, options), sectionContent);
     });
 
     return Promise.all(promises);
@@ -168,11 +168,13 @@ class Wurd {
    *
    * @return {Promise}
    */
-  _loadFromCache(ids, options) {
+  _loadFromCache(ids, options = {}) {
     let allContent = {};
 
     let promises = ids.map(id => {
-      return this.cache.get(id).then(sectionContent => allContent[id] = sectionContent);
+      return this.cache.get(getCacheId(id, options)).then(sectionContent => {
+        allContent[id] = sectionContent
+      });
     });
 
     return Promise.all(promises).then(() => {
