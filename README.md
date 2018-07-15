@@ -1,5 +1,11 @@
 # Wurd CMS client for NodeJS
-Wurd is a service that lets you integrate a CMS into any website or app in minutes.  This client makes it easy to load content for rendering pages on the server.
+Wurd is a service that lets you integrate a CMS into any website or app in minutes.  It features: 
+- Edit content inline on your website
+- Multi-user login: set up accounts for your developers/editors/project managers/clients
+- Draft/published content states
+- Multiple languages
+
+This client makes it easy to load content for rendering pages on the server.
 
 
 ## Example
@@ -9,9 +15,10 @@ For a website you might want to load shared content (e.g. header/footer) along w
 const app = require('express')();
 const wurd = require('wurd');
 
-wurd.connect('node-example', {
-  editMode: true  // Edit mode always on
-});
+// wurd.connect() returns middleware for enabling edit mode
+app.use(wurd.connect('node-example', {
+  editMode: 'querystring'  // Add '?edit' to the querystring to enable editing
+}));
 
 app.get('/', async (req, res) => {
   //Load a content block with accessor methods
@@ -58,6 +65,39 @@ See more in the [examples](https://github.com/wurdcms/wurd-node/tree/master/exam
 - `await wurd.load()` gives you a content block with methods to access the content. See the Content Block API for more details.
 - In your views/templates get content with the block methods, such as `content.text('section.item')`. The `content.el(<itemName>)` helper creates text regions that can be edited in the browser.
 
+
+## Wurd Client API
+The Wurd Client is returned from `require('wurd')` and is used to connect to a project and load content.
+
+### wurd.connect(appName, [options])
+
+```javascript
+const wurd = require('wurd');
+
+wurd.connect('project-name', {
+  editMode: false,  // Set to true to show draft content and enable editing mode; e.g. on staging/preview server
+  draft: false,     // Set to true to show draft instead of published content
+  lang: null,       // If your project has multiple languages configured, you can switch them here e.g. 'en', 'fr', etc.
+});
+```
+
+In a Connect/Express app, you can use the returned middleware to enable switching between edit mode by adding/removing the `edit` querystring parameter (add `?edit` to the end of a page URL to enable editing mode):
+
+```javascript
+const app = require('express')();
+const wurd = require('wurd');
+
+app.use(wurd.connect('project-name', {
+  editMode: 'querystring',
+}));
+```
+
+#### Options
+- editMode
+- draft
+- lang
+
+### wurd.load(sectionNames)
 
 ## Content Block API
 `await wurd.load('sectionName')` will resolve to a Content Block with the following API for accessing content.
