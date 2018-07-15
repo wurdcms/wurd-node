@@ -134,7 +134,7 @@ A helper method for adding editable text regions to HTML.
 Note that the result of this method usually needs to be used in templates unescaped, so you should be careful if using this method where user generated content will be displayed.
 
 ```html
-<h1><%- el('homepage.title') %></h1>
+<h1><%- content.el('homepage.title') %></h1>
 ```
 
 ### .block(path, [callback])
