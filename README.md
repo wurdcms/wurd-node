@@ -2,102 +2,65 @@
 Wurd is a service that lets you integrate a CMS into any website or app in minutes.  This client makes it easy to load content for rendering pages on the server.
 
 
-## Examples
+## Example
 For a website you might want to load shared content (e.g. header/footer) along with the specific page (e.g. homepage content):
-### General example
-```javascript
-const wurd = require('wurd');
-
-wurd.connect('myApp', {
-  editMode: true  // Edit mode always on
-});
-
-const content = await wurd.load('shared,homepage');
-
-content.text('shared.company'); // 'Acme Inc'
-content.text('homepage.title'); // 'Welcome'
-
-// Use block() to create scoped content to simplify things
-const shared = content.block('shared');
-const page = content.block('homepage');
-
-shared.text('company'); // 'Acme Inc'
-page.text('title'); // 'Welcome'
-```
-
-### Express example
-The module includes Connect/Express middleware that loads the requested content before running the route handler. The content object is saved in `res.locals.wurd` so it is accessible in templates by doing `wurd.text(<itemId>)`.
 
 ```javascript
 const app = require('express')();
 const wurd = require('wurd');
 
-// App middleware can be used to trigger editing mode
-app.use(wurd.connect('myApp', {
-  editMode: 'querystring'     // Activate edit mode when the URL has an 'edit' query parameter
-}));
-
-// Route middleware loads content onto the response
-app.use('/', wurd.mw('shared,homepage'), (req, res, next) => {
-  const content = res.locals.wurd;
-  
-  res.render('homepage.ejs', {
-    page: content.block('homepage')
-  });
+wurd.connect('node-example', {
+  editMode: true  // Edit mode always on
 });
-```
 
-```html
-<html>
-  <head>
-    <!-- use text() to get simple text content -->
-    <title><%= wurd.text('shared.company') %></title>
-  </head>
-  <body>
-    <!-- use el() to create editable text regions -->
-    <h1><%- page.el('title') %></h1>
-
-    <h2><%- page.el('signup.title') %></h2>
-    <a href="signup"><%- page.el('signup.button') %></a>
+app.get('/', async (req, res) => {
+  //Load a content block with accessor methods
+  //Content is cached for subsequent requests
+  const content = await wurd.load('shared,homepage');
   
-    <footer>
-      <!-- Use block() for shortcuts when accessing nested data -->
-      <% wurd.block('shared.footer', ({text, el) => { %>
-        <a href="privacy"><%= text('privacy') %></a>
-        <a href="terms"><%= text('terms') %></a>
-      <% }) %>
-    </footer>
-  </body>
-</html>
+  //Use shortcuts for cleaner HTML templates
+  const {text, el} = content;
+  
+  //Use block() for easier access to subsets of content
+  const footer = content.block('shared.footer');
+  
+  res.send(`
+    <html>
+      <head>
+        <!-- use text() to get simple text content -->
+        <title>${text('shared.brandName')}</title>
+      </head>
+      <body>
+        <!-- use el() to create editable text regions -->
+        <h1>${el('homepage.title')}</h1>
+        <h2>${el('homepage.intro', {name: 'John'}, {markdown: true})}</h2>
+        
+        <footer>
+          <a href="privacy">${footer.text('privacy')}</a>
+          <a href="terms">${footer.text('terms')}</a>
+        </footer>
+      </body>
+     </html>
+  `);
+});
+
+app.listen(3000);
 ```
 
 See more in the [examples](https://github.com/wurdcms/wurd-node/tree/master/examples) folder or run them with `npm run example`.
 
 
-## Installation
-Using NPM:
-```
-npm install wurd
-```
+## Installation & usage
+- Create a Wurd account and project at https://manage.wurd.io.
+- Install the `wurd` module in your app: `npm install wurd --save`
+- Connect to Wurd project with `wurd.connect('my-project', { editMode: true })`. 
+- Load top level 'sections' of content you'll be using, e.g.: `await wurd.load('homepage')`. You can load multiple sections at a time: `await wurd.load('shared,homepage')`
+- `await wurd.load()` gives you a content block with methods to access the content. See the Content Block API for more details.
+- In your views/templates get content with the block methods, such as `content.text('section.item')`. The `content.el(<itemName>)` helper creates text regions that can be edited in the browser.
 
-## Usage
-1. Create a Wurd account and app.
-2. Connect to a Wurd app with `wurd.connect('appName', { editMode: true })`. 
-3. Load top level 'sections' of content you'll be using with `wurd.load(<sectionName>)`, e.g.: `wurd.load('homepage')` (or use middleware: `wurd.mw('homepage')`). You can load multiple sections at a time: `wurd.load('header,homepage')`
-4. `wurd.load()` results in a Content Block which gives you shortcut access to the content via methods such as `block.text()`. See the Content Block API for more details.
-4. In your views/templates get content with the block methods, such as `content.text('section.item')`. The `content.el(<itemName>)` helper creates text regions that can be edited in the browser.
-
-```html
-<head>
-  <title><%= wurd.text('homepage.title') %></title>
-</head>
-<body>
-  <h1><%- wurd.el('homepage.title') %></h1>
-</body>
-```
 
 ## Content Block API
-`wurd.load(sectionName)` will resolve to a Content Block with the following API for accessing content.
+`await wurd.load('sectionName')` will resolve to a Content Block with the following API for accessing content.
 
 ### .text(path, [variables])
 Returns a content item's as text.
