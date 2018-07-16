@@ -9,16 +9,17 @@ This client makes it easy to load content for rendering pages on the server.
 
 
 ## Example
-For a website you might want to load shared content (e.g. header/footer) along with the specific page (e.g. homepage content):
+For a website you might want to load shared content (e.g. header/footer) along with the specific page (e.g. homepage content).
+
+[Test out the below code on RunKit](https://runkit.com/powmedia/wurd-node-example)
 
 ```javascript
 const app = require('express')();
 const wurd = require('wurd');
 
-// wurd.connect() returns middleware for enabling edit mode
-app.use(wurd.connect('node-example', {
-  editMode: 'querystring'  // Add '?edit' to the querystring to enable editing
-}));
+wurd.connect('node-example', {
+  editMode: true  // Edit mode always on
+});
 
 app.get('/', async (req, res) => {
   //Load a content block with accessor methods
@@ -28,24 +29,27 @@ app.get('/', async (req, res) => {
   //Use shortcuts for cleaner HTML templates
   const {text, el} = content;
   
-  //Use block() for easier access to subsets of content
+  //Use block() for creating smaller subsets of content
   const footer = content.block('shared.footer');
   
   res.send(`
     <html>
       <head>
-        <!-- use text() to get simple text content -->
+        <!-- Use text() to get simple text content -->
         <title>${text('shared.brandName')}</title>
       </head>
       <body>
-        <!-- use el() to create editable text regions -->
+        <!-- Use el() to create editable text regions -->
         <h1>${el('homepage.title')}</h1>
-        <h2>${el('homepage.intro', {name: 'John'}, {markdown: true})}</h2>
+        <h2>${el('homepage.welcome', {name: 'John'}, {markdown: true})}</h2>
         
         <footer>
-          <a href="privacy">${footer.text('privacy')}</a>
-          <a href="terms">${footer.text('terms')}</a>
+          <a href="privacy">${footer.el('privacy')}</a>
+          <a href="terms">${footer.el('terms')}</a>
         </footer>
+        
+        <!-- Include this line for enabling inline content editing -->
+        <script src="https://edit-v3.wurd.io/widget.js" data-app="node-example"></script>
       </body>
      </html>
   `);
