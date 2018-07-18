@@ -49,7 +49,7 @@ app.get('/', async (req, res) => {
         </footer>
         
         <!-- Include this line for enabling inline content editing -->
-        <script src="https://edit-v3.wurd.io/widget.js" data-app="node-example"></script>
+        <script src="https://edit-v3.wurd.io/widget.js" data-app="${content.app}"></script>
       </body>
      </html>
   `);
@@ -79,13 +79,13 @@ The Wurd Client is returned from `require('wurd')` and is used to connect to a p
 const wurd = require('wurd');
 
 wurd.connect('project-name', {
-  editMode: false,  // Set to true to show draft content and enable editing mode; e.g. on staging/preview server
-  draft: false,     // Set to true to show draft instead of published content
-  lang: null,       // If your project has multiple languages configured, you can switch them here e.g. 'en', 'fr', etc.
+  editMode: false,
+  draft: false,
+  lang: null,
 });
 ```
 
-In a Connect/Express app, you can use the returned middleware to enable switching between edit mode by adding/removing the `edit` querystring parameter (add `?edit` to the end of a page URL to enable editing mode):
+In a Connect/Express app, you can use the returned middleware (along with the route middleware) to enable switching between edit mode by adding/removing the `edit` querystring parameter (add `?edit` to the end of a page URL to enable editing mode). Check the example here: https://runkit.com/powmedia/wurd-node-example-middleware
 
 ```javascript
 const app = require('express')();
@@ -97,9 +97,9 @@ app.use(wurd.connect('project-name', {
 ```
 
 #### Options
-- editMode
-- draft
-- lang
+- **editMode**: Set to true to show draft content and enable editing mode; e.g. on staging/preview server. If using middleware, this can be set to `'querystring'` to enable switching edit mode on/off dynamically.
+- **draft**: Set to `true` to show draft instead of published content
+- **lang**: If your project has multiple languages configured, you can switch them here e.g. `'en', 'fr'`, etc.
 
 ### wurd.load(sectionNames)
 
