@@ -10,16 +10,13 @@ const same = test.strictEqual;
 
 describe('Wurd', function() {
   beforeEach(function() {
-    this.sinon = sinon.sandbox.create();
-
-    //Stub fetch()
     let fetchPromise = new Promise((resolve, reject) => resolve({}));
 
-    this.sinon.stub(Wurd.prototype, '_fetch').returns(fetchPromise);
+    sinon.stub(Wurd.prototype, '_fetch').returns(fetchPromise);
   });
 
   afterEach(function() {
-    this.sinon.restore();
+    sinon.restore();
   });
 
 
@@ -129,8 +126,8 @@ describe('Wurd', function() {
         amet: { title: 'Amet' }
       }));
 
-      this.sinon.stub(wurd, '_loadFromCache').returns(cachePromise);
-      this.sinon.stub(wurd, '_loadFromServer').returns(fetchPromise);
+      sinon.stub(wurd, '_loadFromCache').returns(cachePromise);
+      sinon.stub(wurd, '_loadFromServer').returns(fetchPromise);
     });
 
     it('returns a promise', function() {
@@ -431,7 +428,7 @@ describe('Wurd', function() {
 
       Wurd.prototype._fetch.returns(fetchPromise);
 
-      this.sinon.stub(wurd, '_saveToCache');
+      sinon.stub(wurd, '_saveToCache');
     });
 
     it('returns a promise', function() {
