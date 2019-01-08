@@ -15,6 +15,10 @@
   <body class="container">
     <%- include nav %>
 
+    <% wurd.block('home.foo123', function({ el }) { %>
+      <%- el('test') %>
+    <% }) %>
+
     <% wurd.block('home', ({id, text, markdown, map, el}) => { %>
       <img data-wurd-img="<%= id('heroImage') %>" src="<%= text('heroImage') %>" width="100%" />
 

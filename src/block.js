@@ -64,7 +64,7 @@ module.exports = class Block {
     //If an item is missing, check that the section has been loaded
     if (typeof result === 'undefined' && this.draft) {
       const section = path.split('.')[0];
-      const loadedSections = Object.keys(this.content);
+      const loadedSections = Object.keys(this.content || {});
 
       if (!loadedSections.includes(section)) {
         console.warn(`Tried to access unloaded section: ${section}`);
