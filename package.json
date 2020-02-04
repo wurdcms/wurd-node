@@ -8,18 +8,18 @@
   },
   "main": "src/index.js",
   "dependencies": {
-    "cache-manager": "^2.10.0",
+    "cache-manager": "^2.11.1",
     "get-property-value": "^2.0.0",
-    "marked": "^0.7.0",
+    "marked": "^0.8.0",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
-    "async": "^2.6.3",
-    "ejs": "^2.6.2",
+    "async": "^3.1.1",
+    "ejs": "^3.0.1",
     "express": "^4.17.1",
-    "mocha": "^5.2.0",
-    "nodemon": "^1.19.1",
-    "sinon": "^6.3.5"
+    "mocha": "^7.0.1",
+    "nodemon": "^2.0.2",
+    "sinon": "^8.1.1"
   },
   "scripts": {
     "example": "./node_modules/.bin/nodemon examples/express",
