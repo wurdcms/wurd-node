@@ -1,13 +1,12 @@
 const marked = require('marked');
 const getValue = require('get-property-value');
 
-const {replaceVars} = require('./utils');
+const { replaceVars } = require('./utils');
 
 
 module.exports = class Block {
 
-  constructor(app, path, content, options = {}) {
-    this.app = app;
+  constructor(path, content, options = {}) {
     this.path = path;
     this.content = content;
     this.options = options;
@@ -15,26 +14,6 @@ module.exports = class Block {
     this.lang = options.lang;
     this.editMode = options.editMode;
     this.draft = options.draft;
-
-    // Ensure this is bound properly, required for when using object destructuring
-    // E.g. wurd.with('user', ({text}) => text('age'));
-    this.id = this.id.bind(this);
-    this.get = this.get.bind(this);
-    this.text = this.text.bind(this);
-    this.map = this.map.bind(this);
-    this.block = this.block.bind(this);
-    this.markdown = this.markdown.bind(this);
-    this.el = this.el.bind(this);
-
-    // Add helper functions to the block for convenience.
-    // These are bound to the block for access to this.text(), this.get() etc.
-    if (options.blockHelpers) {
-      Object.keys(options.blockHelpers).forEach(key => {
-        const fn = options.blockHelpers[key];
-
-        this[key] = fn.bind(this);
-      });
-    }
   }
 
   /**
@@ -44,7 +23,7 @@ module.exports = class Block {
    *
    * @return {String}
    */
-  id(path) {
+  id = (path) => {
     if (!path) return this.path;
 
     return this.path ? [this.path, path].join('.') : path;
@@ -58,7 +37,7 @@ module.exports = class Block {
    *
    * @return {Mixed}
    */
-  get(path) {
+  get = (path) => {
     const result = getValue(this.content, path);
 
     //If an item is missing, check that the section has been loaded
@@ -84,7 +63,7 @@ module.exports = class Block {
    *
    * @return {Mixed}
    */
-  text(path, vars) {
+  text = (path, vars) => {
     let text = this.get(path);
 
     if (typeof text === 'undefined') {
@@ -110,7 +89,7 @@ module.exports = class Block {
    * @param {String} path
    * @param {Function} fn     Callback function with signature ({Function} itemBlock, {Number} index)
    */
-  map(path, fn) {
+  map = (path, fn) => {
     const listContent = this.get(path) || { [Date.now()]: {} };
 
     let index = 0;
@@ -139,11 +118,11 @@ module.exports = class Block {
    *
    * @return {Block}
    */
-  block(path, fn) {
+  block = (path, fn) => {
     const blockPath = this.id(path);
     const blockContent = this.get(path);
 
-    const childBlock = new Block(this.app, blockPath, blockContent, this.options);
+    const childBlock = new Block(blockPath, blockContent, this.options);
 
     if (typeof fn === 'function') {
       fn.call(undefined, childBlock);
@@ -162,7 +141,7 @@ module.exports = class Block {
    *
    * @return {Mixed}
    */
-  markdown(path, vars) {
+  markdown = (path, vars) => {
     return marked(this.text(path, vars));
   }
 
@@ -182,7 +161,7 @@ module.exports = class Block {
    * 
    * @return {String}
    */
-  el(path, vars, options = {}) {
+  el = (path, vars, options = {}) => {
     const id = this.id(path);
     const text = options.markdown ? this.markdown(path, vars) : this.text(path, vars);
     const editor = (vars || options.markdown) ? 'data-wurd-md' : 'data-wurd';
@@ -190,7 +169,7 @@ module.exports = class Block {
     if (this.draft) {
       let type = options.type || 'span';
       if (options.markdown) type = 'div';
-      
+
       return `<${type} ${editor}="${id}">${text}</${type}>`;
     } else {
       return text;

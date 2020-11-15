@@ -42,25 +42,7 @@ class Wurd {
       this.options.draft = true;
     }
 
-    //Return express middleware that detects request-specific options such as editMode and language
-    return (req, res, next) => {
-      const query = req.query || {};
-
-      req.wurd = {};
-
-      if (options.editMode === 'querystring') {
-        req.wurd.editMode = (typeof query.edit !== 'undefined');
-      }
-
-      if (options.langMode === 'querystring' && query.lang) {
-        req.wurd.lang = query.lang;
-      }
-
-      //Force draft to true if editMode is on
-      if (req.wurd.editMode) req.wurd.draft = true;
-
-      next();
-    };
+    return this;
   }
 
   /**
@@ -80,9 +62,7 @@ class Wurd {
       options.draft = true;
     }
 
-    const { app } = this;
-
-    if (!app) return Promise.reject(new Error('Use wurd.connect(appName) before wurd.load()'));
+    if (!this.app) return Promise.reject(new Error('Use wurd.connect(appName) before wurd.load()'));
 
     //Normalise ids to array
     const ids = typeof _ids === 'string' ? _ids.split(',') : _ids;
@@ -93,7 +73,7 @@ class Wurd {
     if (options.draft) {
       return this._loadFromServer(ids, options)
         .then(content => {
-          return new Block(app, null, content, options);
+          return new Block(null, content, options);
         });
     }
 
@@ -117,7 +97,7 @@ class Wurd {
           });
       })
       .then(allContent => {
-        return new Block(app, null, allContent, options);
+        return new Block(null, allContent, options);
       });
   }
 
@@ -130,13 +110,23 @@ class Wurd {
    */
   mw(ids) {
     return (req, res, next) => {
-      const options = req.wurd;
+      // detect request-specific options such as editMode and language
+      const editMode = this.options.editMode === 'querystring'
+        ? typeof req.query.edit !== 'undefined'
+        : this.options.editMode;
 
-      this.load(ids, options).then(content => {
-        res.locals.wurd = content;
+      const options = {
+        editMode,
+        lang: req.query.lang,
+        draft: editMode || this.options.draft, // Force draft to true if editMode is on
+      };
 
-        next();
-      })
+      this.load(ids, options)
+        .then(content => {
+          res.locals.wurd = content;
+
+          next();
+        })
         .catch(next);
     };
   }
