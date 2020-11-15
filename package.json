@@ -1,31 +1,56 @@
 {
   "name": "wurd",
   "version": "7.0.0-alpha0",
-  "description": "Wurd CMS client for Node and React",
+  "description": "Wurd CMS client for Node and browser",
   "repository": {
     "type": "git",
     "url": "https://github.com/wurdcms/wurd-node.git"
   },
   "main": "src/index.js",
+  "module": "dist/wurd.esm.js",
+  "browser": "dist/wurd.js",
   "files": [
-    "src"
+    "src",
+    "dist"
+  ],
+  "keywords": [
+    "cms",
+    "headless",
+    "content"
   ],
   "dependencies": {
-    "cache-manager": "^2.11.1",
     "get-property-value": "^2.0.0",
-    "marked": "^0.8.0",
-    "node-fetch": "^2.6.0"
+    "marked": "^0.8.2"
+  },
+  "optionalDependencies": {
+    "cache-manager": "^2.11.1",
+    "node-fetch": "^2.6.1"
   },
   "devDependencies": {
-    "async": "^3.1.1",
-    "ejs": "^3.0.1",
+    "@babel/core": "^7.8.7",
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/preset-env": "^7.8.7",
+    "@rollup/plugin-babel": "^5.2.1",
+    "@rollup/plugin-commonjs": "^16.0.0",
+    "@rollup/plugin-eslint": "^8.0.0",
+    "@rollup/plugin-node-resolve": "^10.0.0",
+    "async": "^3.2.0",
+    "ejs": "^3.1.5",
     "express": "^4.17.1",
-    "mocha": "^7.0.1",
-    "nodemon": "^2.0.2",
-    "sinon": "^8.1.1"
+    "mocha": "^8.2.1",
+    "nodemon": "^2.0.6",
+    "rollup": "^2.33.2",
+    "rollup-plugin-filesize": "^9.0.2",
+    "rollup-plugin-uglify": "^6.0.4",
+    "rollup-pluginutils": "^2.8.2",
+    "serve": "^11.3.0",
+    "sinon": "^9.2.1"
   },
   "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
     "example:express": "nodemon examples/express",
+    "example:web": "serve examples/web",
     "test": "NODE_ENV=test mocha --recursive src/*.test.js --watch --reporter dot"
   },
   "author": "Charlie Davison",

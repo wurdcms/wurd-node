@@ -3,7 +3,7 @@
  *
  * @return {String}
  */
-exports.encodeQueryString = function(data) {
+exports.encodeQueryString = function (data) {
   let parts = Object.keys(data).map(key => {
     let value = data[key];
 
@@ -22,7 +22,7 @@ exports.encodeQueryString = function(data) {
  *
  * @return {String}
  */
-exports.replaceVars = function(text, vars = {}) {
+exports.replaceVars = function (text, vars = {}) {
   if (typeof text !== 'string') return text;
 
   Object.keys(vars).forEach(key => {
@@ -43,8 +43,20 @@ exports.replaceVars = function(text, vars = {}) {
  *
  * @return {String} cacheId
  */
-exports.getCacheId = function(id, options = {}) {
+exports.getCacheId = function (id, options = {}) {
   let lang = options.lang || ''
 
   return `${lang}/${id}`;
 };
+
+exports.browserCache = { // fallback of node-cache-manager on browsers
+  get(key) {
+    return localStorage.getItem(key); // eslint-disable-line no-undef
+  },
+  set(key, content) {
+    return localStorage.setItem(key, content); // eslint-disable-line no-undef
+  },
+  del(key) {
+    return localStorage.removeItem(key); // eslint-disable-line no-undef
+  },
+}

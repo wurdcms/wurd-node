@@ -159,7 +159,7 @@ class Wurd {
 
     const promises = ids.map(id => {
       return this.cache.get(getCacheId(id, options)).then(sectionContent => {
-        allContent[id] = sectionContent
+        allContent[id] = sectionContent;
       });
     });
 

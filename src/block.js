@@ -92,20 +92,13 @@ module.exports = class Block {
   map = (path, fn) => {
     const listContent = this.get(path) || { [Date.now()]: {} };
 
-    let index = 0;
-
     const keys = Object.keys(listContent).sort();
 
-    return keys.map(key => {
-      const item = listContent[key];
-      const currentIndex = index;
-
-      index++;
-
+    return keys.map((key, index) => {
       const itemPath = [path, key].join('.');
       const itemBlock = this.block(itemPath);
 
-      return fn.call(undefined, itemBlock, currentIndex);
+      return fn.call(undefined, itemBlock, index);
     });
   }
 
