@@ -5,23 +5,23 @@ const sinon = require('sinon');
 const Wurd = require('./index').Wurd;
 const Block = require('./block');
 
-const same = test.strictEqual;
+const same = test.deepStrictEqual;
 
 
-describe('Wurd', function() {
-  beforeEach(function() {
+describe('Wurd', function () {
+  beforeEach(function () {
     let fetchPromise = new Promise((resolve, reject) => resolve({}));
 
     sinon.stub(Wurd.prototype, '_fetch').returns(fetchPromise);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sinon.restore();
   });
 
 
-  describe('#connect()', function() {
-    it('sets up the instance, with default options', function() {
+  describe('#connect()', function () {
+    it('sets up the instance, with default options', function () {
       let wurd = new Wurd();
 
       wurd.connect('myApp');
@@ -33,7 +33,7 @@ describe('Wurd', function() {
       same(wurd.options.log, false);
     });
 
-    it('accepts options', function() {
+    it('accepts options', function () {
       let wurd = new Wurd();
 
       wurd.connect('foo', {
@@ -50,7 +50,7 @@ describe('Wurd', function() {
       same(wurd.options.log, true);
     });
 
-    it('sets draft option to true if editMode is true', function() {
+    it('sets draft option to true if editMode is true', function () {
       let wurd = new Wurd();
 
       wurd.connect('myApp', {
@@ -60,8 +60,8 @@ describe('Wurd', function() {
       same(wurd.options.draft, true);
     });
 
-    describe('app middleware', function() {
-      it('with editMode === "querystring" option: sets editMode if edit query parameter is available', function(done) {
+    describe('app middleware', function () {
+      it('with editMode === "querystring" option: sets editMode if edit query parameter is available', function (done) {
         let wurd = new Wurd();
         let mw = wurd.connect('test', {
           editMode: 'querystring'
@@ -73,8 +73,8 @@ describe('Wurd', function() {
 
         let res = {};
 
-        mw(req, res, function() {
-          test.deepEqual(req.wurd, {
+        mw(req, res, function () {
+          same(req.wurd, {
             draft: true,
             editMode: true
           });
@@ -83,7 +83,7 @@ describe('Wurd', function() {
         });
       });
 
-      it('with langMode === "querystring" option: sets lang if lang query parameter is available', function(done) {
+      it('with langMode === "querystring" option: sets lang if lang query parameter is available', function (done) {
         let wurd = new Wurd();
         let mw = wurd.connect('test', {
           langMode: 'querystring'
@@ -95,8 +95,8 @@ describe('Wurd', function() {
 
         let res = {};
 
-        mw(req, res, function() {
-          test.deepEqual(req.wurd, {
+        mw(req, res, function () {
+          same(req.wurd, {
             lang: 'pt'
           });
 
@@ -107,10 +107,10 @@ describe('Wurd', function() {
   });
 
 
-  describe('#load()', function() {
+  describe('#load()', function () {
     let wurd;
 
-    beforeEach(function() {
+    beforeEach(function () {
       wurd = new Wurd();
       wurd.connect('foo');
 
@@ -130,13 +130,13 @@ describe('Wurd', function() {
       sinon.stub(wurd, '_loadFromServer').returns(fetchPromise);
     });
 
-    it('returns a promise', function() {
+    it('returns a promise', function () {
       let promise = wurd.load('a');
-      
+
       test.ok(promise instanceof Promise);
     });
 
-    it('errors if connect was not called first', function(done) {
+    it('errors if connect was not called first', function (done) {
       wurd = new Wurd();
 
       wurd.load('foo')
@@ -148,7 +148,7 @@ describe('Wurd', function() {
         });
     })
 
-    it('loads content from cache and server', function(done) {
+    it('loads content from cache and server', function (done) {
       wurd.load('lorem,ipsum,dolor,amet')
         .then(content => {
           let expectedContent = {
@@ -158,14 +158,14 @@ describe('Wurd', function() {
             amet: { title: 'Amet' }
           };
 
-          test.deepEqual(content.content, expectedContent);
+          same(content.content, expectedContent);
 
           done();
         })
         .catch(done);
     });
 
-    it('accepts options that override defaults', function(done) {
+    it('accepts options that override defaults', function (done) {
       wurd.load('lorem', { log: true, lang: 'es' })
         .then(content => {
           let optionsArg = wurd._loadFromServer.args[0][1];
@@ -178,7 +178,7 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('checks cache when NOT in draft mode', function(done) {
+    it('checks cache when NOT in draft mode', function (done) {
       wurd.load('lorem', { draft: false })
         .then(content => {
           same(wurd._loadFromCache.callCount, 1);
@@ -189,7 +189,7 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('does not check cache when in draft mode', function(done) {
+    it('does not check cache when in draft mode', function (done) {
       wurd.load('lorem', { draft: true })
         .then(content => {
           same(wurd._loadFromCache.callCount, 0);
@@ -200,7 +200,7 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('forces draft to true if editMode is true', function(done) {
+    it('forces draft to true if editMode is true', function (done) {
       wurd.load('test', { editMode: true })
         .then(content => {
           same(content.editMode, true);
@@ -219,7 +219,7 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('returns a Block', function(done) {
+    it('returns a Block', function (done) {
       wurd.load('test')
         .then(block => {
           test.ok(block instanceof Block);
@@ -230,16 +230,16 @@ describe('Wurd', function() {
           same(block.draft, false);
           same(block.lang, null);
 
-          test.deepEqual(block.content, {
+          same(block.content, {
             lorem: { title: 'Lorem' },
             ipsum: { title: 'Ipsum' },
             dolor: { title: 'Dolor' },
             amet: { title: 'Amet' }
           });
 
-          test.deepEqual(block.options, {
+          same(block.options, {
             draft: false,
-            editMode: false, 
+            editMode: false,
             lang: null,
             log: false
           });
@@ -248,7 +248,7 @@ describe('Wurd', function() {
         });
     });
 
-    it('returns a Block, with custom options', function(done) {
+    it('returns a Block, with custom options', function (done) {
       wurd.load('test', { editMode: true, lang: 'es' })
         .then(block => {
           test.ok(block instanceof Block);
@@ -259,14 +259,14 @@ describe('Wurd', function() {
           same(block.draft, true);
           same(block.lang, 'es');
 
-          test.deepEqual(block.content, {
+          same(block.content, {
             ipsum: { title: 'Ipsum' },
             amet: { title: 'Amet' }
           });
 
-          test.deepEqual(block.options, {
+          same(block.options, {
             draft: true,
-            editMode: true, 
+            editMode: true,
             lang: 'es',
             log: false
           });
@@ -279,30 +279,30 @@ describe('Wurd', function() {
   });
 
 
-  describe('#mw()', function() {
+  describe('#mw()', function () {
     it('returns route middleware that loads options from request');
   });
 
 
-  describe('#_saveToCache()', function() {
+  describe('#_saveToCache()', function () {
     let wurd;
 
-    beforeEach(function() {
+    beforeEach(function () {
       wurd = new Wurd();
       wurd.connect('foo');
     });
 
-    it('returns a promise', function() {
+    it('returns a promise', function () {
       let content = {
         foo: { title: 'Foo' }
       };
 
       let promise = wurd._saveToCache(content);
-      
+
       test.ok(promise instanceof Promise);
     });
 
-    it('saves content to the cache - with default language', function(done) {
+    it('saves content to the cache - with default language', function (done) {
       let content = {
         foo: { title: 'Foo' },
         bar: { title: 'Bar' }
@@ -316,8 +316,8 @@ describe('Wurd', function() {
           }, (err, results) => {
             if (err) return done(err);
 
-            test.deepEqual(results.foo, {title: 'Foo'});
-            test.deepEqual(results.bar, {title: 'Bar'});
+            same(results.foo, { title: 'Foo' });
+            same(results.bar, { title: 'Bar' });
 
             done();
           });
@@ -325,7 +325,7 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('saves content to the cache - with specified language', function(done) {
+    it('saves content to the cache - with specified language', function (done) {
       let content = {
         foo: { title: 'Foo' },
         bar: { title: 'Bar' }
@@ -339,8 +339,8 @@ describe('Wurd', function() {
           }, (err, results) => {
             if (err) return done(err);
 
-            test.deepEqual(results.foo, {title: 'Foo'});
-            test.deepEqual(results.bar, {title: 'Bar'});
+            same(results.foo, { title: 'Foo' });
+            same(results.bar, { title: 'Bar' });
 
             done();
           });
@@ -350,22 +350,22 @@ describe('Wurd', function() {
   });
 
 
-  describe('#_loadFromCache()', function() {
+  describe('#_loadFromCache()', function () {
     let wurd;
 
-    beforeEach(function() {
+    beforeEach(function () {
       wurd = new Wurd();
       wurd.connect('foo');
     });
 
-    it('returns a promise', function() {
+    it('returns a promise', function () {
       let promise = wurd._loadFromCache(['a']);
-      
+
       test.ok(promise instanceof Promise);
     });
 
-    describe('without specified language (uses default)', function() {
-      beforeEach(function(done) {
+    describe('without specified language (uses default)', function () {
+      beforeEach(function (done) {
         async.auto({
           lorem: cb => wurd.cache.set('/lorem', { title: 'Lorem' }, cb),
           ipsum: cb => wurd.cache.set('/ipsum', { title: 'Ipsum' }, cb),
@@ -373,11 +373,11 @@ describe('Wurd', function() {
         }, done);
       });
 
-      it('returns items that are in the cache - with default language', function(done) {
+      it('returns items that are in the cache - with default language', function (done) {
         wurd._loadFromCache(['lorem', 'dolor', 'bla'])
           .then(content => {
-            test.deepEqual(content.lorem, { title: 'Lorem' });
-            test.deepEqual(content.dolor, { title: 'Dolor' });
+            same(content.lorem, { title: 'Lorem' });
+            same(content.dolor, { title: 'Dolor' });
 
             same(content.bla, undefined);
 
@@ -387,8 +387,8 @@ describe('Wurd', function() {
       });
     });
 
-    describe('WITH specified language', function() {
-      beforeEach(function(done) {
+    describe('WITH specified language', function () {
+      beforeEach(function (done) {
         async.auto({
           lorem: cb => wurd.cache.set('fr/lorem', { title: 'Lorem' }, cb),
           ipsum: cb => wurd.cache.set('fr/ipsum', { title: 'Ipsum' }, cb),
@@ -396,11 +396,11 @@ describe('Wurd', function() {
         }, done);
       });
 
-      it('returns items that are in the cache - with default language', function(done) {
+      it('returns items that are in the cache - with default language', function (done) {
         wurd._loadFromCache(['lorem', 'dolor', 'bla'], { lang: 'fr' })
           .then(content => {
-            test.deepEqual(content.lorem, { title: 'Lorem' });
-            test.deepEqual(content.dolor, { title: 'Dolor' });
+            same(content.lorem, { title: 'Lorem' });
+            same(content.dolor, { title: 'Dolor' });
 
             same(content.bla, undefined);
 
@@ -412,10 +412,10 @@ describe('Wurd', function() {
   });
 
 
-  describe('#_loadFromServer()', function() {
+  describe('#_loadFromServer()', function () {
     let wurd;
 
-    beforeEach(function() {
+    beforeEach(function () {
       wurd = new Wurd();
       wurd.connect('foo');
 
@@ -431,16 +431,16 @@ describe('Wurd', function() {
       sinon.stub(wurd, '_saveToCache');
     });
 
-    it('returns a promise', function() {
+    it('returns a promise', function () {
       let promise = wurd._loadFromServer(['a'], {});
-      
+
       test.ok(promise instanceof Promise);
     });
 
-    it('fetches sections from the server', function(done) {
+    it('fetches sections from the server', function (done) {
       wurd._loadFromServer(['foo', 'bar'], {})
         .then(content => {
-          test.deepEqual(content, {
+          same(content, {
             foo: { title: 'Foo' },
             bar: { title: 'Bar' }
           });
@@ -453,7 +453,7 @@ describe('Wurd', function() {
         .catch(done);
     });
 
-    it('passes draft and lang options', function(done) {
+    it('passes draft and lang options', function (done) {
       wurd._loadFromServer(['foo', 'bar'], { draft: true, lang: 'fr' })
         .then(content => {
           same(wurd._fetch.callCount, 1);
@@ -466,7 +466,7 @@ describe('Wurd', function() {
   });
 
 
-  describe('#_fetch()', function() {
+  describe('#_fetch()', function () {
     it('fetches from the server');
   });
 

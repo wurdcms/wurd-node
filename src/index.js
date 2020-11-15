@@ -1,8 +1,7 @@
 const cacheManager = require('cache-manager');
-const get = require('get-property-value');
 const fetch = require('node-fetch');
 
-const {encodeQueryString, replaceVars, getCacheId} = require('./utils');
+const { encodeQueryString, replaceVars, getCacheId } = require('./utils');
 const Block = require('./block');
 
 const env = process.env || {};
@@ -36,8 +35,8 @@ class Wurd {
    */
   connect(app, options = {}) {
     this.app = app;
-    
-    Object.assign(this.options, options);
+
+    this.options = { ...this.options, ...options };
 
     if (this.options.editMode === true) {
       this.options.draft = true;
@@ -45,7 +44,7 @@ class Wurd {
 
     //Return express middleware that detects request-specific options such as editMode and language
     return (req, res, next) => {
-      let query = req.query || {};
+      const query = req.query || {};
 
       req.wurd = {};
 
@@ -68,64 +67,58 @@ class Wurd {
    * Loads a section of content so that it's items are ready to be accessed with #get(id)
    *
    * @param {String|Array} ids      IDs of sections to load content for. Can be an array or comma-separated string of sections to load, e.g. 'main,home'
-   * @param {Object} [options]      Options to override the instance defaults.
+   * @param {Object} [opts]      Options to override the instance defaults.
    * 
    * @return {Promise}
    */
-  load(ids, options = {}) {
+  load(_ids, _options) {
     //Merge default and request options
-    options = Object.assign({}, this.options, options);
+    const options = { ...this.options, ..._options };
 
     //Force draft to true if in editMode
     if (options.editMode === true) {
       options.draft = true;
     }
 
-    return new Promise((resolve, reject) => {
+    const { app } = this;
 
-      let {app} = this;
+    if (!app) return Promise.reject(new Error('Use wurd.connect(appName) before wurd.load()'));
 
-      if (!app) return reject(new Error('Use wurd.connect(appName) before wurd.load()'));
+    //Normalise ids to array
+    const ids = typeof _ids === 'string' ? _ids.split(',') : _ids;
 
-      //Normalise ids to array
-      if (typeof ids === 'string') ids = ids.split(',');
+    if (options.log) console.log('loading: ', ids, options);
 
-      options.log && console.log('loading: ', ids, options);
+    //If in draft, skip cache
+    if (options.draft) {
+      return this._loadFromServer(ids, options)
+        .then(content => {
+          return new Block(app, null, content, options);
+        });
+    }
 
-      //If in draft, skip cache
-      if (options.draft) {
-        return this._loadFromServer(ids, options)
-          .then(content => {
-            resolve(new Block(app, null, content, options));
-          })
-          .catch(reject);
-      }
+    //Otherwise not in draft mode; check for cached versions
+    return this._loadFromCache(ids, options)
+      .then(cachedContent => {
+        const uncachedIds = Object.keys(cachedContent).filter(id => {
+          return cachedContent[id] === undefined;
+        });
 
-      //Otherwise not in draft mode; check for cached versions
-      this._loadFromCache(ids, options)
-        .then(cachedContent => {
-          let uncachedIds = Object.keys(cachedContent).filter(id => {
-            return cachedContent[id] === undefined;
+        //If all content was cached, return it without a server trip
+        if (!uncachedIds.length) {
+          return cachedContent;
+        }
+
+        return this._loadFromServer(uncachedIds, options)
+          .then(fetchedContent => {
+            this._saveToCache(fetchedContent, options);
+
+            return { ...cachedContent, ...fetchedContent };
           });
-
-          //If all content was cached, return it without a server trip
-          if (!uncachedIds.length) {
-            return cachedContent;
-          }
-
-          return this._loadFromServer(uncachedIds, options)
-            .then(fetchedContent => {
-              this._saveToCache(fetchedContent, options);
-
-              return Object.assign(cachedContent, fetchedContent);
-            });
-        })
-        .then(allContent => {
-          resolve(new Block(app, null, allContent, options));
-        })
-        .catch(err => reject(err));
-
-    });
+      })
+      .then(allContent => {
+        return new Block(app, null, allContent, options);
+      });
   }
 
   /**
@@ -137,14 +130,14 @@ class Wurd {
    */
   mw(ids) {
     return (req, res, next) => {
-      let options = req.wurd;
+      const options = req.wurd;
 
       this.load(ids, options).then(content => {
         res.locals.wurd = content;
 
         next();
       })
-      .catch(next);
+        .catch(next);
     };
   }
 
@@ -154,8 +147,8 @@ class Wurd {
    * @return {Promise}
    */
   _saveToCache(allContent, options = {}) {
-    let promises = Object.keys(allContent).map(id => {
-      let sectionContent = allContent[id];
+    const promises = Object.keys(allContent).map(id => {
+      const sectionContent = allContent[id];
 
       return this.cache.set(getCacheId(id, options), sectionContent);
     });
@@ -169,9 +162,9 @@ class Wurd {
    * @return {Promise}
    */
   _loadFromCache(ids, options = {}) {
-    let allContent = {};
+    const allContent = {};
 
-    let promises = ids.map(id => {
+    const promises = ids.map(id => {
       return this.cache.get(getCacheId(id, options)).then(sectionContent => {
         allContent[id] = sectionContent
       });
@@ -188,16 +181,16 @@ class Wurd {
    * @return {Promise}
    */
   _loadFromServer(ids, options) {
-    const {app} = this;
+    const { app } = this;
 
     const sections = ids.join(',');
     const params = {};
-      
+
     if (options.draft) params.draft = 1;
     if (options.lang) params.lang = options.lang;
-    
+
     const url = `${API_URL}/apps/${app}/content/${sections}?${encodeQueryString(params)}`;
-    
+
     options.log && console.info('from server: ', ids);
 
     return this._fetch(url);
@@ -216,7 +209,7 @@ class Wurd {
 
 
 
-let instance = new Wurd();
+const instance = new Wurd();
 
 instance.Wurd = Wurd;
 
