@@ -1,3 +1,7 @@
+const LRU = require('lru-cache');
+const fs = require('fs');
+
+
 /**
  * @param {Object} data
  *
@@ -49,14 +53,27 @@ exports.getCacheId = function (id, options = {}) {
   return `${lang}/${id}`;
 };
 
-exports.browserCache = { // fallback of node-cache-manager on browsers
-  get(key) {
-    return localStorage.getItem(key); // eslint-disable-line no-undef
-  },
-  set(key, content) {
-    return localStorage.setItem(key, content); // eslint-disable-line no-undef
-  },
-  del(key) {
-    return localStorage.removeItem(key); // eslint-disable-line no-undef
-  },
-}
+exports.getCache = function (opts = { max: 100, maxAge: 60 * 1000 }) {
+  if (typeof localStorage === 'undefined') {
+    const lru = new LRU(opts);
+    const cacheFile = `/tmp/wurd-content.json`;
+    if (fs.existsSync(cacheFile)) {
+      try {
+        const dump = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+
+        lru.load(dump);
+      } catch { }
+    }
+
+    return {
+      get: (key) => lru.get(key),
+      set: (key, data) => lru.set(key, data),
+      snapshot: (content) => fs.promises.writeFile(cacheFile, content, 'utf8'),
+    }
+  }
+  return {
+    get: (key) => localStorage.getItem(key),
+    set: (key, data) => localStorage.setItem(key, data),
+    snapshot() { }, // used only for server-side fs storage
+  };
+};

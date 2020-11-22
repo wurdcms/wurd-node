@@ -23,7 +23,7 @@
     "marked": "^0.8.2"
   },
   "optionalDependencies": {
-    "cache-manager": "^2.11.1",
+    "lru-cache": "^6.0.0",
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {
@@ -34,7 +34,6 @@
     "@rollup/plugin-commonjs": "^16.0.0",
     "@rollup/plugin-eslint": "^8.0.0",
     "@rollup/plugin-node-resolve": "^10.0.0",
-    "async": "^3.2.0",
     "ejs": "^3.1.5",
     "express": "^4.17.1",
     "mocha": "^8.2.1",

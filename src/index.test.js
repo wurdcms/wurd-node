@@ -1,5 +1,4 @@
 const test = require('assert');
-const async = require('async');
 const sinon = require('sinon');
 
 const Wurd = require('./index').Wurd;
@@ -10,9 +9,7 @@ const same = test.deepStrictEqual;
 
 describe('Wurd', function () {
   beforeEach(function () {
-    let fetchPromise = new Promise((resolve, reject) => resolve({}));
-
-    sinon.stub(Wurd.prototype, '_fetch').returns(fetchPromise);
+    sinon.stub(Wurd.prototype, '_fetch').resolves();
   });
 
   afterEach(function () {
@@ -59,51 +56,6 @@ describe('Wurd', function () {
 
       same(wurd.options.draft, true);
     });
-
-    describe('app middleware', function () {
-      it('with editMode === "querystring" option: sets editMode if edit query parameter is available', function (done) {
-        let wurd = new Wurd();
-        let mw = wurd.connect('test', {
-          editMode: 'querystring'
-        });
-
-        let req = {
-          query: { edit: '' }
-        };
-
-        let res = {};
-
-        mw(req, res, function () {
-          same(req.wurd, {
-            draft: true,
-            editMode: true
-          });
-
-          done();
-        });
-      });
-
-      it('with langMode === "querystring" option: sets lang if lang query parameter is available', function (done) {
-        let wurd = new Wurd();
-        let mw = wurd.connect('test', {
-          langMode: 'querystring'
-        });
-
-        let req = {
-          query: { lang: 'pt' }
-        };
-
-        let res = {};
-
-        mw(req, res, function () {
-          same(req.wurd, {
-            lang: 'pt'
-          });
-
-          done();
-        });
-      });
-    });
   });
 
 
@@ -114,19 +66,19 @@ describe('Wurd', function () {
       wurd = new Wurd();
       wurd.connect('foo');
 
-      let cachePromise = new Promise((resolve, reject) => resolve({
+      let cacheData = {
         lorem: { title: 'Lorem' },
         ipsum: undefined,
         dolor: { title: 'Dolor' },
         amet: undefined
-      }));
+      };
 
-      let fetchPromise = new Promise((resolve, reject) => resolve({
+      let fetchPromise = Promise.resolve({
         ipsum: { title: 'Ipsum' },
         amet: { title: 'Amet' }
-      }));
+      });
 
-      sinon.stub(wurd, '_loadFromCache').returns(cachePromise);
+      sinon.stub(wurd, '_loadFromCache').returns(cacheData);
       sinon.stub(wurd, '_loadFromServer').returns(fetchPromise);
     });
 
@@ -136,143 +88,111 @@ describe('Wurd', function () {
       test.ok(promise instanceof Promise);
     });
 
-    it('errors if connect was not called first', function (done) {
+    it('errors if connect was not called first', function () {
       wurd = new Wurd();
 
-      wurd.load('foo')
-        .then(content => done(new Error('Expected an error')))
-        .catch(err => {
-          same(err.message, 'Use wurd.connect(appName) before wurd.load()');
-
-          done();
-        });
+      test.throws(() => wurd.load('foo'), {
+        message: 'Use wurd.connect(appName) before wurd.load()'
+      });
     })
 
-    it('loads content from cache and server', function (done) {
-      wurd.load('lorem,ipsum,dolor,amet')
-        .then(content => {
-          let expectedContent = {
-            lorem: { title: 'Lorem' },
-            ipsum: { title: 'Ipsum' },
-            dolor: { title: 'Dolor' },
-            amet: { title: 'Amet' }
-          };
+    it('loads content from cache and server', async function () {
+      const content = await wurd.load('lorem,ipsum,dolor,amet')
 
-          same(content.content, expectedContent);
+      let expectedContent = {
+        lorem: { title: 'Lorem' },
+        ipsum: { title: 'Ipsum' },
+        dolor: { title: 'Dolor' },
+        amet: { title: 'Amet' }
+      };
 
-          done();
-        })
-        .catch(done);
+      same(content.content, expectedContent);
     });
 
-    it('accepts options that override defaults', function (done) {
-      wurd.load('lorem', { log: true, lang: 'es' })
-        .then(content => {
-          let optionsArg = wurd._loadFromServer.args[0][1];
+    it('accepts options that override defaults', async function () {
+      const content = await wurd.load('lorem', { log: true, lang: 'es' });
 
-          same(optionsArg.log, true);
-          same(optionsArg.lang, 'es');
+      let optionsArg = wurd._loadFromServer.args[0][1];
 
-          done();
-        })
-        .catch(done);
+      same(optionsArg.log, true);
+      same(optionsArg.lang, 'es');
     });
 
-    it('checks cache when NOT in draft mode', function (done) {
-      wurd.load('lorem', { draft: false })
-        .then(content => {
-          same(wurd._loadFromCache.callCount, 1);
-          same(wurd._loadFromServer.callCount, 1);
+    it('checks cache when NOT in draft mode', async function () {
+      const content = await wurd.load('lorem', { draft: false });
 
-          done();
-        })
-        .catch(done);
+      same(wurd._loadFromCache.callCount, 1);
+      same(wurd._loadFromServer.callCount, 1);
     });
 
-    it('does not check cache when in draft mode', function (done) {
-      wurd.load('lorem', { draft: true })
-        .then(content => {
-          same(wurd._loadFromCache.callCount, 0);
-          same(wurd._loadFromServer.callCount, 1);
+    it('does not check cache when in draft mode', async function () {
+      const content = await wurd.load('lorem', { draft: true });
 
-          done();
-        })
-        .catch(done);
+      same(wurd._loadFromCache.callCount, 0);
+      same(wurd._loadFromServer.callCount, 1);
     });
 
-    it('forces draft to true if editMode is true', function (done) {
-      wurd.load('test', { editMode: true })
-        .then(content => {
-          same(content.editMode, true);
-          same(content.draft, true);
+    it('forces draft to true if editMode is true', async function () {
+      const content = await wurd.load('test', { editMode: true });
 
-          same(wurd._loadFromCache.callCount, 0);
-          same(wurd._loadFromServer.callCount, 1);
+      same(content.editMode, true);
+      same(content.draft, true);
 
-          let optionsArg = wurd._loadFromServer.args[0][1];
+      same(wurd._loadFromCache.callCount, 0);
+      same(wurd._loadFromServer.callCount, 1);
 
-          same(optionsArg.draft, true);
-          same(optionsArg.editMode, true);
+      let optionsArg = wurd._loadFromServer.args[0][1];
 
-          done();
-        })
-        .catch(done);
+      same(optionsArg.draft, true);
+      same(optionsArg.editMode, true);
     });
 
-    it('returns a Block', function (done) {
-      wurd.load('test')
-        .then(block => {
-          test.ok(block instanceof Block);
+    it('returns a Block', async function () {
+      const block = await wurd.load('test');
 
-          same(block.app, 'foo');
-          same(block.path, null);
-          same(block.editMode, false);
-          same(block.draft, false);
-          same(block.lang, null);
+      test.ok(block instanceof Block);
 
-          same(block.content, {
-            lorem: { title: 'Lorem' },
-            ipsum: { title: 'Ipsum' },
-            dolor: { title: 'Dolor' },
-            amet: { title: 'Amet' }
-          });
+      same(block.path, null);
+      same(block.editMode, false);
+      same(block.draft, false);
+      same(block.lang, null);
 
-          same(block.options, {
-            draft: false,
-            editMode: false,
-            lang: null,
-            log: false
-          });
+      same(block.content, {
+        lorem: { title: 'Lorem' },
+        ipsum: { title: 'Ipsum' },
+        dolor: { title: 'Dolor' },
+        amet: { title: 'Amet' }
+      });
 
-          done();
-        });
+      same(block.options, {
+        draft: false,
+        editMode: false,
+        lang: null,
+        log: false
+      });
     });
 
-    it('returns a Block, with custom options', function (done) {
-      wurd.load('test', { editMode: true, lang: 'es' })
-        .then(block => {
-          test.ok(block instanceof Block);
+    it('returns a Block, with custom options', async function () {
+      const block = await wurd.load('test', { editMode: true, lang: 'es' });
 
-          same(block.app, 'foo');
-          same(block.path, null);
-          same(block.editMode, true);
-          same(block.draft, true);
-          same(block.lang, 'es');
+      test.ok(block instanceof Block);
 
-          same(block.content, {
-            ipsum: { title: 'Ipsum' },
-            amet: { title: 'Amet' }
-          });
+      same(block.path, null);
+      same(block.editMode, true);
+      same(block.draft, true);
+      same(block.lang, 'es');
 
-          same(block.options, {
-            draft: true,
-            editMode: true,
-            lang: 'es',
-            log: false
-          });
+      same(block.content, {
+        ipsum: { title: 'Ipsum' },
+        amet: { title: 'Amet' }
+      });
 
-          done();
-        });
+      same(block.options, {
+        draft: true,
+        editMode: true,
+        lang: 'es',
+        log: false
+      });
     });
 
     it('caches fetched content');
@@ -280,7 +200,57 @@ describe('Wurd', function () {
 
 
   describe('#mw()', function () {
-    it('returns route middleware that loads options from request');
+    let wurd, block;
+
+    beforeEach(function () {
+      wurd = new Wurd();
+      block = new Block();
+      sinon.stub(wurd, 'load').resolves(block);
+    });
+
+    it('with editMode === "querystring" option: sets editMode if edit query parameter is available', function (done) {
+      let mw = wurd.connect('test', {
+        editMode: 'querystring'
+      }).mw();
+
+      let req = {
+        query: { edit: '' }
+      };
+
+      let res = {};
+
+      mw(req, res, function () {
+        same(wurd.load.args[0][1], {
+          draft: true,
+          editMode: true,
+          lang: undefined
+        });
+
+        done();
+      });
+    });
+
+    it('with langMode === "querystring" option: sets lang if lang query parameter is available', function (done) {
+      let mw = wurd.connect('test', {
+        langMode: 'querystring'
+      }).mw();
+
+      let req = {
+        query: { lang: 'pt' }
+      };
+
+      let res = {};
+
+      mw(req, res, function () {
+        same(wurd.load.args[0][1], {
+          lang: 'pt',
+          editMode: false,
+          draft: false,
+        });
+
+        done();
+      });
+    });
   });
 
 
@@ -292,60 +262,28 @@ describe('Wurd', function () {
       wurd.connect('foo');
     });
 
-    it('returns a promise', function () {
-      let content = {
-        foo: { title: 'Foo' }
-      };
-
-      let promise = wurd._saveToCache(content);
-
-      test.ok(promise instanceof Promise);
-    });
-
-    it('saves content to the cache - with default language', function (done) {
+    it('saves content to the cache - with default language', async function () {
       let content = {
         foo: { title: 'Foo' },
         bar: { title: 'Bar' }
       };
 
-      wurd._saveToCache(content)
-        .then(() => {
-          async.auto({
-            foo: cb => wurd.cache.get('/foo', cb),
-            bar: cb => wurd.cache.get('/bar', cb)
-          }, (err, results) => {
-            if (err) return done(err);
+      await wurd._saveToCache(content);
 
-            same(results.foo, { title: 'Foo' });
-            same(results.bar, { title: 'Bar' });
-
-            done();
-          });
-        })
-        .catch(done);
+      same(wurd.cache.get('/foo'), { title: 'Foo' });
+      same(wurd.cache.get('/bar'), { title: 'Bar' });
     });
 
-    it('saves content to the cache - with specified language', function (done) {
+    it('saves content to the cache - with specified language', async function () {
       let content = {
         foo: { title: 'Foo' },
         bar: { title: 'Bar' }
       };
 
-      wurd._saveToCache(content, { lang: 'fr' })
-        .then(() => {
-          async.auto({
-            foo: cb => wurd.cache.get('fr/foo', cb),
-            bar: cb => wurd.cache.get('fr/bar', cb)
-          }, (err, results) => {
-            if (err) return done(err);
+      await wurd._saveToCache(content, { lang: 'fr' });
 
-            same(results.foo, { title: 'Foo' });
-            same(results.bar, { title: 'Bar' });
-
-            done();
-          });
-        })
-        .catch(done);
+      same(wurd.cache.get('fr/foo'), { title: 'Foo' });
+      same(wurd.cache.get('fr/bar'), { title: 'Bar' });
     });
   });
 
@@ -358,55 +296,37 @@ describe('Wurd', function () {
       wurd.connect('foo');
     });
 
-    it('returns a promise', function () {
-      let promise = wurd._loadFromCache(['a']);
-
-      test.ok(promise instanceof Promise);
-    });
-
     describe('without specified language (uses default)', function () {
-      beforeEach(function (done) {
-        async.auto({
-          lorem: cb => wurd.cache.set('/lorem', { title: 'Lorem' }, cb),
-          ipsum: cb => wurd.cache.set('/ipsum', { title: 'Ipsum' }, cb),
-          dolor: cb => wurd.cache.set('/dolor', { title: 'Dolor' }, cb),
-        }, done);
+      beforeEach(function () {
+        wurd.cache.set('/lorem', { title: 'Lorem' });
+        wurd.cache.set('/ipsum', { title: 'Ipsum' });
+        wurd.cache.set('/dolor', { title: 'Dolor' });
       });
 
-      it('returns items that are in the cache - with default language', function (done) {
-        wurd._loadFromCache(['lorem', 'dolor', 'bla'])
-          .then(content => {
-            same(content.lorem, { title: 'Lorem' });
-            same(content.dolor, { title: 'Dolor' });
+      it('returns items that are in the cache - with default language', async function () {
+        const content = await wurd._loadFromCache(['lorem', 'dolor', 'bla']);
 
-            same(content.bla, undefined);
+        same(content.lorem, { title: 'Lorem' });
+        same(content.dolor, { title: 'Dolor' });
 
-            done();
-          })
-          .catch(done);
+        same(content.bla, undefined);
       });
     });
 
     describe('WITH specified language', function () {
-      beforeEach(function (done) {
-        async.auto({
-          lorem: cb => wurd.cache.set('fr/lorem', { title: 'Lorem' }, cb),
-          ipsum: cb => wurd.cache.set('fr/ipsum', { title: 'Ipsum' }, cb),
-          dolor: cb => wurd.cache.set('fr/dolor', { title: 'Dolor' }, cb),
-        }, done);
+      beforeEach(function () {
+        wurd.cache.set('fr/lorem', { title: 'Lorem' });
+        wurd.cache.set('fr/ipsum', { title: 'Ipsum' });
+        wurd.cache.set('fr/dolor', { title: 'Dolor' });
       });
 
-      it('returns items that are in the cache - with default language', function (done) {
-        wurd._loadFromCache(['lorem', 'dolor', 'bla'], { lang: 'fr' })
-          .then(content => {
-            same(content.lorem, { title: 'Lorem' });
-            same(content.dolor, { title: 'Dolor' });
+      it('returns items that are in the cache - with default language', async function () {
+        const content = await wurd._loadFromCache(['lorem', 'dolor', 'bla'], { lang: 'fr' });
 
-            same(content.bla, undefined);
+        same(content.lorem, { title: 'Lorem' });
+        same(content.dolor, { title: 'Dolor' });
 
-            done();
-          })
-          .catch(done);
+        same(content.bla, undefined);
       });
     });
   });
@@ -437,31 +357,23 @@ describe('Wurd', function () {
       test.ok(promise instanceof Promise);
     });
 
-    it('fetches sections from the server', function (done) {
-      wurd._loadFromServer(['foo', 'bar'], {})
-        .then(content => {
-          same(content, {
-            foo: { title: 'Foo' },
-            bar: { title: 'Bar' }
-          });
+    it('fetches sections from the server', async function () {
+      const content = await wurd._loadFromServer(['foo', 'bar'], {});
 
-          same(wurd._fetch.callCount, 1);
-          same(wurd._fetch.args[0][0], 'https://api-v3.wurd.io/apps/foo/content/foo,bar?');
+      same(content, {
+        foo: { title: 'Foo' },
+        bar: { title: 'Bar' }
+      });
 
-          done();
-        })
-        .catch(done);
+      same(wurd._fetch.callCount, 1);
+      same(wurd._fetch.args[0][0], 'https://api-v3.wurd.io/apps/foo/content/foo,bar?');
     });
 
-    it('passes draft and lang options', function (done) {
-      wurd._loadFromServer(['foo', 'bar'], { draft: true, lang: 'fr' })
-        .then(content => {
-          same(wurd._fetch.callCount, 1);
-          same(wurd._fetch.args[0][0], 'https://api-v3.wurd.io/apps/foo/content/foo,bar?draft=1&lang=fr');
+    it('passes draft and lang options', async function () {
+      const content = await wurd._loadFromServer(['foo', 'bar'], { draft: true, lang: 'fr' });
 
-          done();
-        })
-        .catch(done);
+      same(wurd._fetch.callCount, 1);
+      same(wurd._fetch.args[0][0], 'https://api-v3.wurd.io/apps/foo/content/foo,bar?draft=1&lang=fr');
     });
   });
 

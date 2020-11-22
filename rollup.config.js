@@ -8,7 +8,8 @@ import pkg from './package.json';
 
 const globals = {
   'node-fetch': 'fetch',
-  'cache-manager': false,
+  'lru-cache': 'LRU',
+  'fs': 'fs',
 };
 
 export default [
@@ -31,9 +32,9 @@ export default [
         globals,
       },
     ],
-    external: ['node-fetch', 'cache-manager'],
+    external: ['node-fetch', 'lru-cache', 'fs'],
     plugins: [
-      eslint({ throwOnError: true }),
+      eslint(),
       resolve({ // so Rollup can find node modules
         browser: true,
       }),
@@ -51,11 +52,16 @@ export default [
   // ES module (for bundlers) build.
   {
     input: 'src/index.js',
-    external: ['get-property-value', 'marked', 'node-fetch', 'node-cache-manager'],
+    external: ['get-property-value', 'marked', 'node-fetch', 'lru-cache', 'fs'],
     output: {
       file: pkg.module,
       format: 'es'
     },
-    plugins: [],
+    plugins: [
+      resolve({ // so Rollup can find node modules
+        browser: true,
+      }),
+      commonjs(), // so Rollup can convert node modules to ES modules
+    ],
   }
 ];

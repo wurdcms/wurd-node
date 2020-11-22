@@ -1,6 +1,5 @@
 const fetch = require('node-fetch');
-const cacheManager = require('cache-manager');
-const { encodeQueryString, getCacheId } = require('./utils');
+const { encodeQueryString, getCacheId, getCache } = require('./utils');
 const Block = require('./block');
 
 const env = process.env || {};
@@ -8,22 +7,18 @@ const API_URL = env.WURD_API_URL || 'https://api-v3.wurd.io';
 
 
 class Wurd {
-  constructor() {
+  constructor(options) {
     this.app = null;
 
     this.options = {
       draft: false,
       editMode: false,
       lang: null,
-      log: false
+      log: false,
+      ...options,
     };
 
-    this.cache = typeof localStorage === 'undefined'
-      ? cacheManager.caching({ store: 'memory', max: 100, ttl: 60 })
-      : {
-        get: (key) => localStorage.getItem(key),
-        set: (key, content) => localStorage.setItem(key, content),
-      };
+    this.cache = getCache();
   }
 
   /**
@@ -36,7 +31,7 @@ class Wurd {
    *
    * @return {Function} middleware
    */
-  connect(app, options = {}) {
+  connect(app, options) {
     this.app = app;
 
     this.options = { ...this.options, ...options };
@@ -65,7 +60,9 @@ class Wurd {
       options.draft = true;
     }
 
-    if (!this.app) return Promise.reject(new Error('Use wurd.connect(appName) before wurd.load()'));
+    if (!this.app) {
+      throw new Error('Use wurd.connect(appName) before wurd.load()');
+    }
 
     //Normalise ids to array
     const ids = typeof _ids === 'string' ? _ids.split(',') : _ids;
@@ -81,26 +78,20 @@ class Wurd {
     }
 
     //Otherwise not in draft mode; check for cached versions
-    return this._loadFromCache(ids, options)
-      .then(cachedContent => {
-        const uncachedIds = Object.keys(cachedContent).filter(id => {
-          return cachedContent[id] === undefined;
-        });
+    const cachedContent = this._loadFromCache(ids, options);
 
-        //If all content was cached, return it without a server trip
-        if (!uncachedIds.length) {
-          return cachedContent;
-        }
+    const uncachedIds = Object.keys(cachedContent).filter(id => cachedContent[id] === undefined);
 
-        return this._loadFromServer(uncachedIds, options)
-          .then(fetchedContent => {
-            this._saveToCache(fetchedContent, options);
+    //If all content was cached, return it without a server trip
+    if (!uncachedIds.length) {
+      return new Block(null, cachedContent, options);
+    }
 
-            return { ...cachedContent, ...fetchedContent };
-          });
-      })
-      .then(allContent => {
-        return new Block(null, allContent, options);
+    return this._loadFromServer(uncachedIds, options)
+      .then(fetchedContent => {
+        this._saveToCache(fetchedContent, options);
+
+        return new Block(null, { ...cachedContent, ...fetchedContent }, options);
       });
   }
 
@@ -112,7 +103,7 @@ class Wurd {
    * @return {Function} middleware
    */
   mw(ids) {
-    return (req, res, next) => {
+    return async (req, res, next) => {
       // detect request-specific options such as editMode and language
       const editMode = this.options.editMode === 'querystring'
         ? typeof req.query.edit !== 'undefined'
@@ -124,13 +115,13 @@ class Wurd {
         draft: editMode || this.options.draft, // Force draft to true if editMode is on
       };
 
-      this.load(ids, options)
-        .then(content => {
-          res.locals.wurd = content;
+      try {
+        res.locals.wurd = await this.load(ids, options);
 
-          next();
-        })
-        .catch(next);
+        next();
+      } catch (err) {
+        next(err);
+      }
     };
   }
 
@@ -139,14 +130,12 @@ class Wurd {
    *
    * @return {Promise}
    */
-  _saveToCache(allContent, options = {}) {
-    const promises = Object.keys(allContent).map(id => {
-      const sectionContent = allContent[id];
-
-      return this.cache.set(getCacheId(id, options), sectionContent);
-    });
-
-    return Promise.all(promises);
+  _saveToCache(allContent, options) {
+    const cacheEntries = Object.keys(allContent).map(id => ({ k: getCacheId(id, options), v: allContent[id] }));
+    for (const { k, v } of cacheEntries) {
+      this.cache.set(k, v);
+    }
+    this.cache.snapshot(cacheEntries);
   }
 
   /**
@@ -154,18 +143,10 @@ class Wurd {
    *
    * @return {Promise}
    */
-  _loadFromCache(ids, options = {}) {
-    const allContent = {};
-
-    const promises = ids.map(id => {
-      return this.cache.get(getCacheId(id, options)).then(sectionContent => {
-        allContent[id] = sectionContent
-      });
-    });
-
-    return Promise.all(promises).then(() => {
-      return allContent;
-    });
+  _loadFromCache(ids, options) {
+    return Object.fromEntries(
+      ids.map(id => [id, this.cache.get(getCacheId(id, options))])
+    );
   }
 
   /**

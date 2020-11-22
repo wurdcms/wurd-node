@@ -1,13 +1,14 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('node-fetch'), require('cache-manager')) :
-  typeof define === 'function' && define.amd ? define(['node-fetch', 'cache-manager'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.wurd = factory(global.fetch, global.cacheManager));
-}(this, (function (fetch, cacheManager) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('node-fetch'), require('lru-cache'), require('fs')) :
+  typeof define === 'function' && define.amd ? define(['node-fetch', 'lru-cache', 'fs'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.wurd = factory(global.fetch, global.LRU, global.fs));
+}(this, (function (fetch, LRU, fs) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
   var fetch__default = /*#__PURE__*/_interopDefaultLegacy(fetch);
-  var cacheManager__default = /*#__PURE__*/_interopDefaultLegacy(cacheManager);
+  var LRU__default = /*#__PURE__*/_interopDefaultLegacy(LRU);
+  var fs__default = /*#__PURE__*/_interopDefaultLegacy(fs);
 
   function _typeof(obj) {
     "@babel/helpers - typeof";
@@ -23,6 +24,42 @@
     }
 
     return _typeof(obj);
+  }
+
+  function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+    try {
+      var info = gen[key](arg);
+      var value = info.value;
+    } catch (error) {
+      reject(error);
+      return;
+    }
+
+    if (info.done) {
+      resolve(value);
+    } else {
+      Promise.resolve(value).then(_next, _throw);
+    }
+  }
+
+  function _asyncToGenerator(fn) {
+    return function () {
+      var self = this,
+          args = arguments;
+      return new Promise(function (resolve, reject) {
+        var gen = fn.apply(self, args);
+
+        function _next(value) {
+          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+        }
+
+        function _throw(err) {
+          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+        }
+
+        _next(undefined);
+      });
+    };
   }
 
   function _classCallCheck(instance, Constructor) {
@@ -96,11 +133,86 @@
     return target;
   }
 
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
+  function _createForOfIteratorHelper(o, allowArrayLike) {
+    var it;
+
+    if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
+      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+        if (it) o = it;
+        var i = 0;
+
+        var F = function () {};
+
+        return {
+          s: F,
+          n: function () {
+            if (i >= o.length) return {
+              done: true
+            };
+            return {
+              done: false,
+              value: o[i++]
+            };
+          },
+          e: function (e) {
+            throw e;
+          },
+          f: F
+        };
+      }
+
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+
+    var normalCompletion = true,
+        didErr = false,
+        err;
+    return {
+      s: function () {
+        it = o[Symbol.iterator]();
+      },
+      n: function () {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      },
+      e: function (e) {
+        didErr = true;
+        err = e;
+      },
+      f: function () {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      }
+    };
+  }
+
   /**
    * @param {Object} data
    *
    * @return {String}
    */
+
   var encodeQueryString = function encodeQueryString(data) {
     var parts = Object.keys(data).map(function (key) {
       var value = data[key];
@@ -143,23 +255,53 @@
     return "".concat(lang, "/").concat(id);
   };
 
-  var browserCache = {
-    // fallback of node-cache-manager on browsers
-    get: function get(key) {
-      return localStorage.getItem(key); // eslint-disable-line no-undef
-    },
-    set: function set(key, content) {
-      return localStorage.setItem(key, content); // eslint-disable-line no-undef
-    },
-    del: function del(key) {
-      return localStorage.removeItem(key); // eslint-disable-line no-undef
+  var getCache = function getCache() {
+    var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
+      max: 100,
+      maxAge: 60 * 1000
+    };
+
+    if (typeof localStorage === 'undefined') {
+      var lru = new LRU__default['default'](opts);
+      var cacheFile = "/tmp/wurd-content.json";
+
+      if (fs__default['default'].existsSync(cacheFile)) {
+        try {
+          var dump = JSON.parse(fs__default['default'].readFileSync(cacheFile));
+          lru.load(dump);
+        } catch (_unused) {}
+      }
+
+      return {
+        get: function get(key) {
+          return lru.get(key);
+        },
+        set: function set(key, data) {
+          return lru.set(key, data);
+        },
+        snapshot: function snapshot(content) {
+          return fs__default['default'].promises.writeFile(cacheFile, content, 'utf8');
+        }
+      };
     }
+
+    return {
+      get: function get(key) {
+        return localStorage.getItem(key);
+      },
+      set: function set(key, data) {
+        return localStorage.setItem(key, data);
+      },
+      snapshot: function snapshot() {} // used only for server-side fs storage
+
+    };
   };
+
   var utils = {
     encodeQueryString: encodeQueryString,
     replaceVars: replaceVars,
     getCacheId: getCacheId,
-    browserCache: browserCache
+    getCache: getCache
   };
 
   function createCommonjsModule(fn, basedir, module) {
@@ -2152,33 +2294,23 @@
   , _temp);
 
   var encodeQueryString$1 = utils.encodeQueryString,
-      getCacheId$1 = utils.getCacheId;
+      getCacheId$1 = utils.getCacheId,
+      getCache$1 = utils.getCache;
   var env = process.env || {};
   var API_URL = env.WURD_API_URL || 'https://api-v3.wurd.io';
 
   var Wurd = /*#__PURE__*/function () {
-    function Wurd() {
+    function Wurd(options) {
       _classCallCheck(this, Wurd);
 
       this.app = null;
-      this.options = {
+      this.options = _objectSpread2({
         draft: false,
         editMode: false,
         lang: null,
         log: false
-      };
-      this.cache = typeof localStorage === 'undefined' ? cacheManager__default['default'].caching({
-        store: 'memory',
-        max: 100,
-        ttl: 60
-      }) : {
-        get: function get(key) {
-          return localStorage.getItem(key);
-        },
-        set: function set(key, content) {
-          return localStorage.setItem(key, content);
-        }
-      };
+      }, options);
+      this.cache = getCache$1();
     }
     /**
      * Sets up the default connection/instance
@@ -2194,8 +2326,7 @@
 
     _createClass(Wurd, [{
       key: "connect",
-      value: function connect(app) {
-        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      value: function connect(app, options) {
         this.app = app;
         this.options = _objectSpread2(_objectSpread2({}, this.options), options);
 
@@ -2227,7 +2358,10 @@
           options.draft = true;
         }
 
-        if (!this.app) return Promise.reject(new Error('Use wurd.connect(appName) before wurd.load()')); //Normalise ids to array
+        if (!this.app) {
+          throw new Error('Use wurd.connect(appName) before wurd.load()');
+        } //Normalise ids to array
+
 
         var ids = typeof _ids === 'string' ? _ids.split(',') : _ids;
         if (options.log) console.log('loading: ', ids, options); //If in draft, skip cache
@@ -2239,22 +2373,20 @@
         } //Otherwise not in draft mode; check for cached versions
 
 
-        return this._loadFromCache(ids, options).then(function (cachedContent) {
-          var uncachedIds = Object.keys(cachedContent).filter(function (id) {
-            return cachedContent[id] === undefined;
-          }); //If all content was cached, return it without a server trip
+        var cachedContent = this._loadFromCache(ids, options);
 
-          if (!uncachedIds.length) {
-            return cachedContent;
-          }
+        var uncachedIds = Object.keys(cachedContent).filter(function (id) {
+          return cachedContent[id] === undefined;
+        }); //If all content was cached, return it without a server trip
 
-          return _this._loadFromServer(uncachedIds, options).then(function (fetchedContent) {
-            _this._saveToCache(fetchedContent, options);
+        if (!uncachedIds.length) {
+          return new block$2(null, cachedContent, options);
+        }
 
-            return _objectSpread2(_objectSpread2({}, cachedContent), fetchedContent);
-          });
-        }).then(function (allContent) {
-          return new block$2(null, allContent, options);
+        return this._loadFromServer(uncachedIds, options).then(function (fetchedContent) {
+          _this._saveToCache(fetchedContent, options);
+
+          return new block$2(null, _objectSpread2(_objectSpread2({}, cachedContent), fetchedContent), options);
         });
       }
       /**
@@ -2270,21 +2402,48 @@
       value: function mw(ids) {
         var _this2 = this;
 
-        return function (req, res, next) {
-          // detect request-specific options such as editMode and language
-          var editMode = _this2.options.editMode === 'querystring' ? typeof req.query.edit !== 'undefined' : _this2.options.editMode;
-          var options = {
-            editMode: editMode,
-            lang: req.query.lang,
-            draft: editMode || _this2.options.draft // Force draft to true if editMode is on
+        return /*#__PURE__*/function () {
+          var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(req, res, next) {
+            var editMode, options;
+            return regeneratorRuntime.wrap(function _callee$(_context) {
+              while (1) {
+                switch (_context.prev = _context.next) {
+                  case 0:
+                    // detect request-specific options such as editMode and language
+                    editMode = _this2.options.editMode === 'querystring' ? typeof req.query.edit !== 'undefined' : _this2.options.editMode;
+                    options = {
+                      editMode: editMode,
+                      lang: req.query.lang,
+                      draft: editMode || _this2.options.draft // Force draft to true if editMode is on
 
+                    };
+                    _context.prev = 2;
+                    _context.next = 5;
+                    return _this2.load(ids, options);
+
+                  case 5:
+                    res.locals.wurd = _context.sent;
+                    next();
+                    _context.next = 12;
+                    break;
+
+                  case 9:
+                    _context.prev = 9;
+                    _context.t0 = _context["catch"](2);
+                    next(_context.t0);
+
+                  case 12:
+                  case "end":
+                    return _context.stop();
+                }
+              }
+            }, _callee, null, [[2, 9]]);
+          }));
+
+          return function (_x, _x2, _x3) {
+            return _ref.apply(this, arguments);
           };
-
-          _this2.load(ids, options).then(function (content) {
-            res.locals.wurd = content;
-            next();
-          })["catch"](next);
-        };
+        }();
       }
       /**
        * @param {Object} allContent    Content keyed by section ID (i.e. the response from the Wurd content API)
@@ -2294,15 +2453,31 @@
 
     }, {
       key: "_saveToCache",
-      value: function _saveToCache(allContent) {
-        var _this3 = this;
-
-        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-        var promises = Object.keys(allContent).map(function (id) {
-          var sectionContent = allContent[id];
-          return _this3.cache.set(getCacheId$1(id, options), sectionContent);
+      value: function _saveToCache(allContent, options) {
+        var cacheEntries = Object.keys(allContent).map(function (id) {
+          return {
+            k: getCacheId$1(id, options),
+            v: allContent[id]
+          };
         });
-        return Promise.all(promises);
+
+        var _iterator = _createForOfIteratorHelper(cacheEntries),
+            _step;
+
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var _step$value = _step.value,
+                k = _step$value.k,
+                v = _step$value.v;
+            this.cache.set(k, v);
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+
+        this.cache.snapshot(cacheEntries);
       }
       /**
        * @param {Array} ids           Section IDs to load content for
@@ -2312,19 +2487,12 @@
 
     }, {
       key: "_loadFromCache",
-      value: function _loadFromCache(ids) {
-        var _this4 = this;
+      value: function _loadFromCache(ids, options) {
+        var _this3 = this;
 
-        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-        var allContent = {};
-        var promises = ids.map(function (id) {
-          return _this4.cache.get(getCacheId$1(id, options)).then(function (sectionContent) {
-            allContent[id] = sectionContent;
-          });
-        });
-        return Promise.all(promises).then(function () {
-          return allContent;
-        });
+        return Object.fromEntries(ids.map(function (id) {
+          return [id, _this3.cache.get(getCacheId$1(id, options))];
+        }));
       }
       /**
        * @param {Array} ids           Section IDs to load content for
