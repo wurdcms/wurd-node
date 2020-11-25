@@ -1,9 +1,11 @@
-const fetch = require('node-fetch');
-const { encodeQueryString, getCacheId, getCache } = require('./utils');
+const _fetch = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
+const { getCacheId, getCache } = require('./utils');
 const Block = require('./block');
 
-const env = process.env || {};
-const API_URL = env.WURD_API_URL || 'https://api-v3.wurd.io';
+const API_URL = typeof process !== 'undefined' && process.env.WURD_API_URL || 'https://api-v3.wurd.io';
+
+
+const hasEditQueryString = () => typeof location !== 'undefined' && new URLSearchParams(location.search).has('edit');
 
 
 class Wurd {
@@ -36,7 +38,7 @@ class Wurd {
 
     this.options = { ...this.options, ...options };
 
-    if (this.options.editMode === true) {
+    if (this.options.editMode === true || this.options.editMode === 'querystring' && hasEditQueryString()) {
       this.options.draft = true;
     }
 
@@ -56,7 +58,7 @@ class Wurd {
     const options = { ...this.options, ..._options };
 
     //Force draft to true if in editMode
-    if (options.editMode === true) {
+    if (options.editMode === true || this.options.editMode === 'querystring' && hasEditQueryString()) {
       options.draft = true;
     }
 
@@ -80,7 +82,7 @@ class Wurd {
     //Otherwise not in draft mode; check for cached versions
     const cachedContent = this._loadFromCache(ids, options);
 
-    const uncachedIds = Object.keys(cachedContent).filter(id => cachedContent[id] === undefined);
+    const uncachedIds = Object.keys(cachedContent).filter(id => cachedContent[id] == undefined);
 
     //If all content was cached, return it without a server trip
     if (!uncachedIds.length) {
@@ -106,7 +108,7 @@ class Wurd {
     return async (req, res, next) => {
       // detect request-specific options such as editMode and language
       const editMode = this.options.editMode === 'querystring'
-        ? typeof req.query.edit !== 'undefined'
+        ? req.query.edit !== undefined
         : this.options.editMode;
 
       const options = {
@@ -116,7 +118,8 @@ class Wurd {
       };
 
       try {
-        res.locals.wurd = await this.load(ids, options);
+        res.locals.cms = await this.load(ids, options);
+        res.locals.app = this.app;
 
         next();
       } catch (err) {
@@ -131,11 +134,11 @@ class Wurd {
    * @return {Promise}
    */
   _saveToCache(allContent, options) {
-    const cacheEntries = Object.keys(allContent).map(id => ({ k: getCacheId(id, options), v: allContent[id] }));
-    for (const { k, v } of cacheEntries) {
+    const cacheEntries = Object.keys(allContent).map(id => [getCacheId(id, options), allContent[id]]);
+    for (const [k, v] of cacheEntries) {
       this.cache.set(k, v);
     }
-    this.cache.snapshot(cacheEntries);
+    this.cache.snapshot(Object.fromEntries(cacheEntries));
   }
 
   /**
@@ -163,15 +166,15 @@ class Wurd {
     if (options.draft) params.draft = 1;
     if (options.lang) params.lang = options.lang;
 
-    const url = `${API_URL}/apps/${app}/content/${sections}?${encodeQueryString(params)}`;
+    const url = `${API_URL}/apps/${app}/content/${sections}?${new URLSearchParams(params)}`;
 
-    options.log && console.info('from server: ', ids);
+    options.log && console.info('from server: ', ids, url);
 
     return this._fetch(url);
   }
 
   _fetch(url) {
-    return fetch(url)
+    return _fetch(url)
       .then(res => {
         if (!res.ok) throw new Error(`Error loading ${url}: ${res.statusText}`);
 

@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
     
-    <% wurd.block('home.meta', ({text}) => { %>
+    <% cms.block('home.meta', ({text}) => { %>
       <title><%= text('title') %></title>
       <meta name="description" content="<%= text('description') %>" />
     <% }); %>
@@ -15,11 +15,11 @@
   <body class="container">
     <%- include('nav') %>
 
-    <% wurd.block('home.foo123', function({ el }) { %>
+    <% cms.block('home.foo123', function({ el }) { %>
       <%- el('test') %>
     <% }) %>
 
-    <% wurd.block('home', ({id, text, markdown, map, el}) => { %>
+    <% cms.block('home', ({id, text, markdown, map, el}) => { %>
       <img data-wurd-img="<%= id('heroImage') %>" src="<%= text('heroImage') %>" width="100%" />
 
       <h2><%- el('welcome.title') %></h2>
@@ -50,14 +50,14 @@
       </ul>
 
 
-      <% if (wurd.editMode) { %>
+      <% if (cms.editMode) { %>
         <div style="position: fixed; top: 0; right: 0;">
           <div data-wurd-obj="<%= id('meta') %>" data-wurd-obj-props="title,description">
             Metadata
           </div>
         </div>
 
-        <script src="https://edit-v3.wurd.io/widget.js" data-app="<%= wurd.app %>"></script>
+        <script src="https://edit-v3.wurd.io/widget.js" data-app="<%= app %>"></script>
       <% } %>
     <% }); %>
 

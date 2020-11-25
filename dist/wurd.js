@@ -1,12 +1,12 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('node-fetch'), require('lru-cache'), require('fs')) :
   typeof define === 'function' && define.amd ? define(['node-fetch', 'lru-cache', 'fs'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.wurd = factory(global.fetch, global.LRU, global.fs));
-}(this, (function (fetch, LRU, fs) { 'use strict';
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.wurd = factory(global.window.fetch, global.LRU, global.fs));
+}(this, (function (require$$0, LRU, fs) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
-  var fetch__default = /*#__PURE__*/_interopDefaultLegacy(fetch);
+  var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
   var LRU__default = /*#__PURE__*/_interopDefaultLegacy(LRU);
   var fs__default = /*#__PURE__*/_interopDefaultLegacy(fs);
 
@@ -133,6 +133,41 @@
     return target;
   }
 
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  }
+
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+
+  function _iterableToArrayLimit(arr, i) {
+    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"] != null) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
+  }
+
   function _unsupportedIterableToArray(o, minLen) {
     if (!o) return;
     if (typeof o === "string") return _arrayLikeToArray(o, minLen);
@@ -148,6 +183,10 @@
     for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
 
     return arr2;
+  }
+
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _createForOfIteratorHelper(o, allowArrayLike) {
@@ -208,19 +247,6 @@
   }
 
   /**
-   * @param {Object} data
-   *
-   * @return {String}
-   */
-
-  var encodeQueryString = function encodeQueryString(data) {
-    var parts = Object.keys(data).map(function (key) {
-      var value = data[key];
-      return encodeURIComponent(key) + '=' + encodeURIComponent(value);
-    });
-    return parts.join('&');
-  };
-  /**
    * Replaces {{mustache}} style placeholders in text with variables
    *
    * @param {String} text
@@ -228,7 +254,6 @@
    *
    * @return {String}
    */
-
 
   var replaceVars = function replaceVars(text) {
     var vars = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
@@ -267,9 +292,21 @@
 
       if (fs__default['default'].existsSync(cacheFile)) {
         try {
-          var dump = JSON.parse(fs__default['default'].readFileSync(cacheFile));
-          lru.load(dump);
-        } catch (_unused) {}
+          var content = JSON.parse(fs__default['default'].readFileSync(cacheFile, 'utf8'));
+          lru.load(Object.entries(content).map(function (_ref) {
+            var _ref2 = _slicedToArray(_ref, 2),
+                k = _ref2[0],
+                v = _ref2[1];
+
+            return {
+              k: k,
+              v: v
+            };
+          }));
+        } catch (_unused) {
+          console.warn('[wurd] inconsistent cache file detected and deleted');
+          fs__default['default'].unlinkSync(cacheFile);
+        }
       }
 
       return {
@@ -285,20 +322,32 @@
       };
     }
 
+    var lsKey = 'wurd-content';
+    var store = {};
+
+    if (localStorage.getItem(lsKey)) {
+      try {
+        store = JSON.parse(localStorage.getItem(lsKey));
+      } catch (_unused2) {
+        console.warn('[wurd] inconsistent cache file detected and deleted');
+        localStorage.removeItem(lsKey);
+      }
+    }
+
     return {
       get: function get(key) {
-        return localStorage.getItem(key);
+        return store[key];
       },
       set: function set(key, data) {
-        return localStorage.setItem(key, data);
+        store[key] = data;
       },
-      snapshot: function snapshot() {} // used only for server-side fs storage
-
+      snapshot: function snapshot(content) {
+        return localStorage.setItem(lsKey, JSON.stringify(content));
+      }
     };
   };
 
   var utils = {
-    encodeQueryString: encodeQueryString,
     replaceVars: replaceVars,
     getCacheId: getCacheId,
     getCache: getCache
@@ -2293,11 +2342,15 @@
    */
   , _temp);
 
-  var encodeQueryString$1 = utils.encodeQueryString,
-      getCacheId$1 = utils.getCacheId,
+  var _fetch2 = typeof fetch !== 'undefined' ? fetch : require$$0__default['default'];
+
+  var getCacheId$1 = utils.getCacheId,
       getCache$1 = utils.getCache;
-  var env = process.env || {};
-  var API_URL = env.WURD_API_URL || 'https://api-v3.wurd.io';
+  var API_URL = typeof process !== 'undefined' && process.env.WURD_API_URL || 'https://api-v3.wurd.io';
+
+  var hasEditQueryString = function hasEditQueryString() {
+    return typeof location !== 'undefined' && new URLSearchParams(location.search).has('edit');
+  };
 
   var Wurd = /*#__PURE__*/function () {
     function Wurd(options) {
@@ -2330,7 +2383,7 @@
         this.app = app;
         this.options = _objectSpread2(_objectSpread2({}, this.options), options);
 
-        if (this.options.editMode === true) {
+        if (this.options.editMode === true || this.options.editMode === 'querystring' && hasEditQueryString()) {
           this.options.draft = true;
         }
 
@@ -2354,7 +2407,7 @@
         var options = _objectSpread2(_objectSpread2({}, this.options), _options); //Force draft to true if in editMode
 
 
-        if (options.editMode === true) {
+        if (options.editMode === true || this.options.editMode === 'querystring' && hasEditQueryString()) {
           options.draft = true;
         }
 
@@ -2376,7 +2429,7 @@
         var cachedContent = this._loadFromCache(ids, options);
 
         var uncachedIds = Object.keys(cachedContent).filter(function (id) {
-          return cachedContent[id] === undefined;
+          return cachedContent[id] == undefined;
         }); //If all content was cached, return it without a server trip
 
         if (!uncachedIds.length) {
@@ -2410,7 +2463,7 @@
                 switch (_context.prev = _context.next) {
                   case 0:
                     // detect request-specific options such as editMode and language
-                    editMode = _this2.options.editMode === 'querystring' ? typeof req.query.edit !== 'undefined' : _this2.options.editMode;
+                    editMode = _this2.options.editMode === 'querystring' ? req.query.edit !== undefined : _this2.options.editMode;
                     options = {
                       editMode: editMode,
                       lang: req.query.lang,
@@ -2422,22 +2475,23 @@
                     return _this2.load(ids, options);
 
                   case 5:
-                    res.locals.wurd = _context.sent;
+                    res.locals.cms = _context.sent;
+                    res.locals.app = _this2.app;
                     next();
-                    _context.next = 12;
+                    _context.next = 13;
                     break;
 
-                  case 9:
-                    _context.prev = 9;
+                  case 10:
+                    _context.prev = 10;
                     _context.t0 = _context["catch"](2);
                     next(_context.t0);
 
-                  case 12:
+                  case 13:
                   case "end":
                     return _context.stop();
                 }
               }
-            }, _callee, null, [[2, 9]]);
+            }, _callee, null, [[2, 10]]);
           }));
 
           return function (_x, _x2, _x3) {
@@ -2455,10 +2509,7 @@
       key: "_saveToCache",
       value: function _saveToCache(allContent, options) {
         var cacheEntries = Object.keys(allContent).map(function (id) {
-          return {
-            k: getCacheId$1(id, options),
-            v: allContent[id]
-          };
+          return [getCacheId$1(id, options), allContent[id]];
         });
 
         var _iterator = _createForOfIteratorHelper(cacheEntries),
@@ -2466,9 +2517,10 @@
 
         try {
           for (_iterator.s(); !(_step = _iterator.n()).done;) {
-            var _step$value = _step.value,
-                k = _step$value.k,
-                v = _step$value.v;
+            var _step$value = _slicedToArray(_step.value, 2),
+                k = _step$value[0],
+                v = _step$value[1];
+
             this.cache.set(k, v);
           }
         } catch (err) {
@@ -2477,7 +2529,7 @@
           _iterator.f();
         }
 
-        this.cache.snapshot(cacheEntries);
+        this.cache.snapshot(Object.fromEntries(cacheEntries));
       }
       /**
        * @param {Array} ids           Section IDs to load content for
@@ -2508,14 +2560,14 @@
         var params = {};
         if (options.draft) params.draft = 1;
         if (options.lang) params.lang = options.lang;
-        var url = "".concat(API_URL, "/apps/").concat(app, "/content/").concat(sections, "?").concat(encodeQueryString$1(params));
-        options.log && console.info('from server: ', ids);
+        var url = "".concat(API_URL, "/apps/").concat(app, "/content/").concat(sections, "?").concat(new URLSearchParams(params));
+        options.log && console.info('from server: ', ids, url);
         return this._fetch(url);
       }
     }, {
       key: "_fetch",
       value: function _fetch(url) {
-        return fetch__default['default'](url).then(function (res) {
+        return _fetch2(url).then(function (res) {
           if (!res.ok) throw new Error("Error loading ".concat(url, ": ").concat(res.statusText));
           return res.json();
         });

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
 
     <!-- Change to point to the file on your site or a CDN -->
-    <script src="dist/wurd.min.js"></script>
+    <script src="dist/wurd.js"></script>
   </head>
   <body class="container">
     <img data-wurd-img="home.heroImage" style="width: 100%" />
@@ -17,7 +17,7 @@
 
 
     <script>
-      var preConnectBlock = wurd.block('home');
+      // var preConnectBlock = wurd.block('home');
 
       function insertEl(type, innerHtml) {
         const el = document.createElement(type);
@@ -27,12 +27,14 @@
 
       wurd.connect('example', {
         //Turn edit mode on when `?edit` is added to the page URL
-        editMode: 'querystring'
+        editMode: 'querystring',
+        log: true,
       });
 
-      wurd.load('nav,home')
-        .catch(function(err) { console.error(err) })
+      Promise.resolve()
+        .then(() => wurd.load('nav,home'))
         .then(function(cms) {
+          window.cms=cms;
           //The cms object provides access to all loaded content
           document.title = cms.text('home.title');
 
@@ -57,13 +59,22 @@
 
           // ADVANCED USE
           // Use blocks created before .connect() and load() were called
-          console.log(preConnectBlock.text('title'));
+          // console.log(preConnectBlock.text('title'));
 
           // Object destructuring allows for the shortest getters.
           var {text, el} = cms.block('home');
           
           console.log(text('footer'));
           insertEl('footer', el('footer'));
+
+          if (cms.editMode) { // load editor
+            const script = document.createElement('script');
+            script.src = 'https://edit-v3.wurd.io/widget.js';
+            script.async = true;
+            script.dataset.app = wurd.app;
+            if (cms.lang) script.dataset.lang = cms.lang;
+            document.body.appendChild(script);
+          }
         });
     </script>
   </body>

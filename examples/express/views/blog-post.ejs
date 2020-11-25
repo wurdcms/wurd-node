@@ -7,19 +7,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
     
-    <title><%= wurd.text(`${postId}.title`) %></title>
+    <title><%= cms.text(`${postId}.title`) %></title>
   </head>
   <body class="container">
     <%- include('nav') %>
 
-    <% wurd.block(postId, function({path, text, markdown, el}) { %>
+    <% cms.block(postId, function({path, text, markdown, el}) { %>
       <h1><%- el('title') %></h1>
 
       <%- el('content', null, { markdown: true }) %>
     <% }); %>
 
 
-    <% if (wurd.editMode) { %>
+    <% if (cms.editMode) { %>
       <script src="https://edit-v3.wurd.io/widget.js" data-app="example"></script>
     <% } %>
 

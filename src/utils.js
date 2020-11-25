@@ -3,22 +3,6 @@ const fs = require('fs');
 
 
 /**
- * @param {Object} data
- *
- * @return {String}
- */
-exports.encodeQueryString = function (data) {
-  let parts = Object.keys(data).map(key => {
-    let value = data[key];
-
-    return encodeURIComponent(key) + '=' + encodeURIComponent(value);
-  });
-
-  return parts.join('&');
-};
-
-
-/**
  * Replaces {{mustache}} style placeholders in text with variables
  *
  * @param {String} text
@@ -59,10 +43,13 @@ exports.getCache = function (opts = { max: 100, maxAge: 60 * 1000 }) {
     const cacheFile = `/tmp/wurd-content.json`;
     if (fs.existsSync(cacheFile)) {
       try {
-        const dump = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        const content = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
 
-        lru.load(dump);
-      } catch { }
+        lru.load(Object.entries(content).map(([k, v]) => ({ k, v })));
+      } catch {
+        console.warn('[wurd] inconsistent cache file detected and deleted');
+        fs.unlinkSync(cacheFile);
+      }
     }
 
     return {
@@ -71,9 +58,21 @@ exports.getCache = function (opts = { max: 100, maxAge: 60 * 1000 }) {
       snapshot: (content) => fs.promises.writeFile(cacheFile, content, 'utf8'),
     }
   }
+
+  const lsKey = 'wurd-content';
+  let store = {};
+  if (localStorage.getItem(lsKey)) {
+    try {
+      store = JSON.parse(localStorage.getItem(lsKey));
+    } catch {
+      console.warn('[wurd] inconsistent cache file detected and deleted');
+      localStorage.removeItem(lsKey);
+    }
+  }
+
   return {
-    get: (key) => localStorage.getItem(key),
-    set: (key, data) => localStorage.setItem(key, data),
-    snapshot() { }, // used only for server-side fs storage
+    get: (key) => store[key],
+    set: (key, data) => { store[key] = data; },
+    snapshot: (content) => localStorage.setItem(lsKey, JSON.stringify(content)),
   };
 };

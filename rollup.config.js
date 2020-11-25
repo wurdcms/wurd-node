@@ -7,7 +7,7 @@ import eslint from '@rollup/plugin-eslint';
 import pkg from './package.json';
 
 const globals = {
-  'node-fetch': 'fetch',
+  'node-fetch': 'window.fetch',
   'lru-cache': 'LRU',
   'fs': 'fs',
 };
