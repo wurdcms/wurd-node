@@ -10,7 +10,7 @@
   "dependencies": {
     "cache-manager": "^2.11.1",
     "get-property-value": "^2.0.0",
-    "marked": "^0.8.0",
+    "marked": "^4.0.10",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
