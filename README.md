@@ -49,7 +49,7 @@ app.get('/', async (req, res) => {
         </footer>
         
         <!-- Include this line for enabling inline content editing -->
-        <script src="https://edit-v3.wurd.io/widget.js" data-app="${content.app}"></script>
+        <script src="https://widget.wurd.io/widget.js" data-app="${content.app}"></script>
       </body>
      </html>
   `);

@@ -1,6 +1,6 @@
 {
   "name": "wurd",
-  "version": "6.4.0",
+  "version": "7.0.0",
   "description": "Wurd CMS client for Node",
   "repository": {
     "type": "git",
@@ -8,18 +8,18 @@
   },
   "main": "src/index.js",
   "dependencies": {
-    "cache-manager": "^2.11.1",
+    "cache-manager": "^4.1.0",
     "get-property-value": "^2.0.0",
-    "marked": "^0.8.0",
-    "node-fetch": "^2.6.0"
+    "marked": "^4.1.0",
+    "node-fetch": "^2.6.7"
   },
   "devDependencies": {
-    "async": "^3.1.1",
-    "ejs": "^3.0.1",
-    "express": "^4.17.1",
-    "mocha": "^7.0.1",
-    "nodemon": "^2.0.2",
-    "sinon": "^8.1.1"
+    "async": "^3.2.4",
+    "ejs": "^3.1.8",
+    "express": "^4.18.1",
+    "mocha": "^10.0.0",
+    "nodemon": "^2.0.19",
+    "sinon": "^14.0.0"
   },
   "scripts": {
     "example": "./node_modules/.bin/nodemon examples/express",

@@ -1,4 +1,4 @@
-const marked = require('marked');
+const marked = require('marked').marked;
 const getValue = require('get-property-value');
 
 const {replaceVars} = require('./utils');
