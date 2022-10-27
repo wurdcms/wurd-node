@@ -3,7 +3,7 @@
  *
  * @return {String}
  */
-exports.encodeQueryString = function(data) {
+exports.encodeQueryString = function (data) {
   let parts = Object.keys(data).map(key => {
     let value = data[key];
 
@@ -22,16 +22,10 @@ exports.encodeQueryString = function(data) {
  *
  * @return {String}
  */
-exports.replaceVars = function(text, vars = {}) {
+exports.replaceVars = function (text, vars = {}) {
   if (typeof text !== 'string') return text;
 
-  Object.keys(vars).forEach(key => {
-    let val = vars[key];
-
-    text = text.replace(new RegExp(`{{${key}}}`, 'g'), val);
-  });
-
-  return text;
+  return text.replace(/{{([\w.-]+)}}/g, (_, key) => vars[key] || '');
 };
 
 
@@ -43,7 +37,7 @@ exports.replaceVars = function(text, vars = {}) {
  *
  * @return {String} cacheId
  */
-exports.getCacheId = function(id, options = {}) {
+exports.getCacheId = function (id, options = {}) {
   let lang = options.lang || ''
 
   return `${lang}/${id}`;
